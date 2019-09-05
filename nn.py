@@ -8,36 +8,42 @@ import numpy as np
 from functools import reduce
 from sigmoids import tanh, sigmoid
 
-def make_network(*layer_arr):
-    num_layers = len(layer_arr)
-    assert num_layers > 2
+class NN:
+    def __init__(self, *layer_arr):
+        self.make_network(layer_arr)
 
-    # ndarray holding the weight matricies; the nth element of `weights` is a matrix holding
-    # the weights of layer n, where the weight matrix has the weight w_ji in ith column, jth row,
-    # connecting neuron j in layer l to neuron i in layer l-1
-    weights = [] 
+    def make_network(self, layer_arr):
+        num_layers = len(layer_arr)
+        assert num_layers > 2
 
-    layer_enum = enumerate(layer_arr)
-    _, prev_dim = layer_enum.__next__()
+        # ndarray holding the weight matricies; the nth element of `weights` is a matrix holding
+        # the weights of layer n, where the weight matrix has the weight w_ji in ith column, jth row,
+        # connecting neuron j in layer l to neuron i in layer l-1
+        weights = [] 
 
-    for layer, dim in layer_enum:
-        weights.append(np.random.rand(prev_dim, dim))
-        prev_dim = dim
+        layer_iter = iter(layer_arr)
+        prev_dim = layer_iter.__next__()
 
-    return weights
+        for dim in layer_iter:
+            weights.append(np.random.rand(prev_dim, dim))
+            prev_dim = dim
 
-def feed_forward(x, weights):
-    # i think it is janky casting the row to a matrix, but oh well
-    # interestingly enough, it changes the row vector of weights to a 
-    # column vector
-    assert x.shape == np.asmatrix(weights[0][:,0]).shape
-    a = x
-    for W in weights:
-        a = np.matmul(a, W)
-        # a = sigmoid.f(a)
-    return a
+        self.weights = weights
+
+    def feed_forward(self, x):
+        '''
+        Feed-forward through the entire network
+        What is the best way to apply the non-linearities at each layer
+        '''
+        assert x.shape == np.asmatrix(self.weights[0][:,0]).shape
+
+        z = x
+        for W in self.weights:
+            a = np.matmul(z, W)
+            z = sigmoid.f(a)
+        return a
 
 if __name__ == '__main__':
-    ws = make_network(3,4,2)
-    y = feed_forward(np.ones((1,3)), ws)
+    nn = NN(3,4,2)
+    y = nn.feed_forward(np.ones((1,3)))
     print(y)
