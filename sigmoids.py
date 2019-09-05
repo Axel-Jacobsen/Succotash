@@ -16,7 +16,7 @@ class tanh:
     def deriv(v):
         return 1 / np.cosh(v)**2
 
-class soft_max:
+class softmax:
 
     # calculate softmax; needs the sum of exponentials of
     # last layer, so v is the value, vs is all of the as

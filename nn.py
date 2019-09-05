@@ -6,12 +6,14 @@ First guess at creating a neural network; goal is to be able to train basic nn, 
 
 import numpy as np
 from functools import reduce
-from sigmoids import tanh, sigmoid
+from sigmoids import tanh, sigmoid, softmax
 
 class NN:
 
-    def __init__(self, *layer_arr):
+    def __init__(self, hs, layer_arr):
+        assert len(hs) == len(layer_arr)
         self.make_network(layer_arr)
+        self.hs = hs
 
     def make_network(self, layer_arr):
         num_layers = len(layer_arr)
@@ -40,13 +42,16 @@ class NN:
         What is the best way to apply the non-linearities at each layer?
         the np append is adding the bias in the network
         '''
-        for W in self.weights:
+        z = x
+        for i, W in enumerate(self.weights):
             z = np.append(z, 1)
             a = np.matmul(z, W)
-            z = sigmoid.f(a)
+            z = self.hs[i].f(a)
         return a
 
 if __name__ == '__main__':
-    nn = NN(3,4,2,1)
+    hs = [tanh] * 3 + [softmax]
+    layers = [3,4,2,1]
+    nn = NN(hs, layers)
     y = nn.feed_forward(np.ones((1,3)))
     print(y)
