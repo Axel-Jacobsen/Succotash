@@ -9,6 +9,7 @@ from functools import reduce
 from sigmoids import tanh, sigmoid
 
 class NN:
+
     def __init__(self, *layer_arr):
         self.make_network(layer_arr)
 
@@ -25,7 +26,10 @@ class NN:
         prev_dim = layer_iter.__next__()
 
         for dim in layer_iter:
-            weights.append(np.random.rand(prev_dim, dim))
+            # adding 1 to the previous dim adds the bias to the weights, 
+            # given outputs to our layers always have the value 1 appended to
+            # the end of them
+            weights.append(np.random.rand(prev_dim + 1, dim))
             prev_dim = dim
 
         self.weights = weights
@@ -33,17 +37,16 @@ class NN:
     def feed_forward(self, x):
         '''
         Feed-forward through the entire network
-        What is the best way to apply the non-linearities at each layer
+        What is the best way to apply the non-linearities at each layer?
+        the np append is adding the bias in the network
         '''
-        assert x.shape == np.asmatrix(self.weights[0][:,0]).shape
-
-        z = x
         for W in self.weights:
+            z = np.append(z, 1)
             a = np.matmul(z, W)
             z = sigmoid.f(a)
         return a
 
 if __name__ == '__main__':
-    nn = NN(3,4,2)
+    nn = NN(3,4,2,1)
     y = nn.feed_forward(np.ones((1,3)))
     print(y)
