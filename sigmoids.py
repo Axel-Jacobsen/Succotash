@@ -3,10 +3,10 @@ import numpy as np
 class sigmoid:
 
     def f(v):
-        return 1 / (1 + np.exp(-v))
+        return 1 / (1 + np.exp(-1*v))
 
     def deriv(v):
-        return np.exp(-v) / (1 + np.exp(-v)**2)
+        return np.exp(-1*v) / (1 + np.exp(-1*v)**2)
 
 class tanh:
 
