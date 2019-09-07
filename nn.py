@@ -12,10 +12,9 @@ class NN:
 
     def __init__(self, hs, layers):
         assert len(hs) == len(layers)
-        self.make_network(layers)
-
         self.layers = layers
         self.hs = hs
+        self.weights = self.make_network(layers)
 
     def make_network(self, layer_arr):
         num_layers = len(layer_arr)
@@ -24,6 +23,7 @@ class NN:
         # ndarray holding the weight matricies; the nth element of `weights` is a matrix holding
         # the weights of layer n, where the weight matrix has the weight w_ji in ith column, jth row,
         # connecting neuron j in layer l to neuron i in layer l-1
+        # weights[i] are the weights between the ith and i+1th layer
         weights = [] 
 
         layer_iter = iter(layer_arr)
@@ -35,8 +35,8 @@ class NN:
         for dim in layer_iter:
             weights.append(np.random.rand(prev_dim + 1, dim))
             prev_dim = dim
-
-        self.weights = weights
+        
+        return weights
 
     def feed_forward(self, x, save_data=False):
         '''
@@ -48,17 +48,17 @@ class NN:
         z = x
         out_dict = {
                 'y': None,
-                'linear_out': [],
-                'non_linear_out': []
+                'a': [],
+                'z': []
             }
-
+        
         for i, W in enumerate(self.weights):
-            z = np.append(z, 1)
-            a = np.matmul(z, W)
+            z_prev = np.append(z, 1) # Add the bias back in; size of z_prev won't blow up because the matrix mulitplication with W will reduce its size
+            a = np.matmul(z_prev, W)
             z = self.hs[i].f(a)
             if save_data:
-                out_dict['linear_out'].append(a)
-                out_dict['non_linear_out'].append(z)
+                out_dict['a'].append(a)
+                out_dict['z'].append(z)
 
         out_dict['y'] = z
         return out_dict
@@ -68,6 +68,9 @@ class NN:
         xs,ts are lists of vectors (ts are targets for training i.e. true output given input x)
         For now output is softmax only
         """
+        # FEED FORWARD AND COLLECT OUTPUTS FROM EACH LAYER #
+        # ITERATE OVER ALL DATA #
+        # ff_passes[i] is the output from the ith layer of neurons
         ff_passes = []
         output_dim = self.layers[-1]
         delta_L_vec = np.ndarray((1, output_dim))
@@ -75,7 +78,25 @@ class NN:
             ff_pass = self.feed_forward(x, save_data=True)
             ff_passes.append(ff_pass)
             delta_L_vec += np.matmul(ff_pass['y'], np.concatenate([t]*output_dim)) - output_dim * t
-        print(delta_L_vec)
+        
+        # BACK PROPOGATE AND CALCULATE GRADIENTS #
+        # ITERATE OVER ALL LAYERS #
+        deltas = [delta_L_vec]
+        grads = []
+
+        for i in range(len(self.layers) - 2, 0, -1):
+            # I think this line is wrong, havent tested but wrote it drunk on wine and exhausted with fucking life
+            print((ff_passes[i]['a']).shape)
+            print((np.matmul(deltas[-1], self.weights[i])).shape)
+            delta_l = self.hs[i].deriv(ff_passes[i]['a']) * np.matmul(deltas[-1], self.weights[i])
+            deltas.append(delta_l)
+            grads.append(np.matmul(delta_l, np.concatenate([ff_passes[i - 1]['z']] * self.layers[i])))
+
+        deltas = deltas[::-1]
+        grads = grads[::-1]
+
+        return grads
+
 
 if __name__ == '__main__':
     hs = [sigmoid] * 3 + [softmax]
@@ -86,6 +107,6 @@ if __name__ == '__main__':
     xs = np.asarray([np.random.rand(1,3) for _ in range(10)])
     ts = np.asarray([np.random.rand(1,3) for _ in range(10)])
 
-    nn.back_prop(xs, ts)
-
+    dWs = nn.back_prop(xs, ts)
+    print(dWs)
 
