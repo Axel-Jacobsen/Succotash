@@ -16,12 +16,19 @@ class tanh:
     def deriv(v):
         return 1 / np.cosh(v)**2
 
-class softmax:
+class linear:
 
-    # calculate softmax; needs the sum of exponentials of
-    # last layer, so v is the value, vs is all of the as
-    def f(v: float, vs: np.ndarray):
-        return np.exp(v) / (np.sum(np.exp(vs)))
+    def f(v):
+        return v
 
+    def derivative(v):
+        return np.ones_like(v)
 
+class ReLU:
+
+    def f(v):
+        return np.maximum(v,0)
+    
+    def deriv(v):
+        return (v>0).astype(int)
 
