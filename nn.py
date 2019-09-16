@@ -5,9 +5,6 @@ from functools import reduce
 from activations import ReLU
 from loss_fcns import cross_entropy_loss
 
-#
-# TODO: split loss functions from nonlinear functions
-#       
 
 class NN:
 
@@ -71,7 +68,7 @@ class NN:
         out_dict['y'] = z
         return out_dict
 
-    def mini_batch(self, batch_xs, batch_ys, lr):
+    def learn(self, batch_xs, batch_ys, lr):
         """
         batch_xs is the batch of inputs, batch_ys is batch of outputs, lr is learning rate
         """
@@ -82,8 +79,8 @@ class NN:
             weights = [weight + weight_grad for weight, weight_grad in zip(weights, weight_grads)]
             biases  = [bias + bias_grad for bias, bias_grad in zip(biases, bias_grads)]
 
-        self.weights = [w - eta * weight_grad for w, weight_grad in zip(self.weights, weights)]
-        self.biases  = [b - eta * bias_grad for b, bias_grad in zip(self.biases, weights)]
+        self.weights = [w - lr * weight_grad for w, weight_grad in zip(self.weights, weights)]
+        self.biases  = [b - lr * bias_grad for b, bias_grad in zip(self.biases, weights)]
 
     def back_prop(self, x, t):
         """
@@ -118,6 +115,5 @@ if __name__ == '__main__':
     xs = np.asarray([np.random.rand(1,1) for _ in range(10)])
     ts = np.asarray([np.random.rand(1,1) for _ in range(10)])
 
-    dWs = nn.back_prop(xs[0], ts[0])
-    print(dWs)
+    nn.learn(xs, ts, lr=0.1)
 
