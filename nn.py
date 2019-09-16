@@ -2,7 +2,7 @@
 
 import numpy as np
 from functools import reduce
-from nonlinears import ReLU
+from activations import ReLU
 from loss_fcns import cross_entropy_loss
 
 #
@@ -42,7 +42,7 @@ class NN:
             weights.append(weight)
             biases.append(bias)
             prev_dim = dim
-        print(f'len(weights)={len(weights)}')
+        
         return weights, biases
 
     def feed_forward(self, x, save_data=False):
@@ -61,7 +61,7 @@ class NN:
         z = np.copy(x)
 
         for i, W in enumerate(self.weights):
-            print(W.shape, z.shape)
+            
             a = np.einsum('ij, jk -> ik', W, z) + self.biases[i]
             z = self.hs[i].f(a)
             if save_data:
