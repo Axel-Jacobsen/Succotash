@@ -21,7 +21,7 @@ class linear:
     def f(v):
         return v
 
-    def derivative(v):
+    def deriv(v):
         return np.ones_like(v)
 
 class ReLU:
@@ -30,5 +30,5 @@ class ReLU:
         return np.maximum(v,0)
     
     def deriv(v):
-        return (v>0).astype(int)
+        return (v>0).astype(float)
 

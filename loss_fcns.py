@@ -8,10 +8,10 @@ class cross_entropy_loss:
     def deriv(t, y):
          return y - t
 
-class squared_error:
+class squared_loss:
 
     def f(t, y):
-        return 0.5 * (y-t)**2
+        return np.square(y-t) / 2
 
     def deriv(t, y):
         return y - t
