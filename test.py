@@ -1,7 +1,7 @@
 import nn
 import numpy as np
 import matplotlib.pyplot as plt
-from activations import linear, tanh
+from activations import linear, tanh, ReLU, sigmoid
 from loss_fcns import squared_loss
 
 np.random.seed(42)
@@ -43,11 +43,15 @@ if __name__ == '__main__':
         return grads
 
     # Set up neural net
-    net = nn.NN([3, 5, 1], [linear] * 2, squared_loss)
-
+    net = nn.NN([3, 5, 1], [ReLU] * 2, squared_loss)
+    print(net.feed_forward(np.ones((3,1)))[0])
     # Backward pass
     # Let input to backwards pass be [[1, 1, 1]], and let that be the output as well
-    test_g_w, _ = net.back_prop(np.ones((3,1)), np.array(20))
+    #
+    # Behavior: test_g_w matches test_fdg_w when we subtract 1 from 'true' data (for back prop loss derivative, just ff pass) 
+    # if we subtract by something lower (e.g. 1e-2), test_g_w is smaller by 2 orders of magnitude (or something like that). 
+    # this behavoiur is not the same for sigmoid?!
+    test_g_w, _ = net.back_prop(np.ones((3,1)), np.array( -1 +  net.feed_forward(np.ones((3,1)))[0]))
     # Estimation by finite differences
     test_fdg_w = finite_diff_grad(np.ones((3,1)), net)
     
