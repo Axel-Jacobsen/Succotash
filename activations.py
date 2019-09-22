@@ -24,11 +24,28 @@ class linear:
     def deriv(v):
         return np.ones_like(v)
 
+class eLU:
+
+    def f(v):
+        return np.greater(v, 0) * v + (1 - np.greater(v, 0)) * (np.exp(v) - 1)
+
+    def deriv(v):
+        return np.greater(v, 0) + np.maximum(v, 0) * v + (1 - np.greater(v, 0)) * np.exp(v)
+
+
 class ReLU:
 
     def f(v):
         return np.maximum(v,0)
     
     def deriv(v):
-        return (v>0).astype(float)
+        return np.greater(v, 0).astype(float)
+
+class leaky_ReLU:
+
+    def f(v):
+        return np.maximum(0,v) + 0.1 * np.minimum(0,v)
+
+    def deriv(v):
+        return np.greater(v, 0).astype(float) + 0.1 * np.less(v, 0).astype(float)
 

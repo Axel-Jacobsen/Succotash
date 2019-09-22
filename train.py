@@ -1,9 +1,8 @@
 import nn
 import numpy as np
 import matplotlib.pyplot as plt
-from activations import ReLU, sigmoid
-from loss_fcns import squared_loss
-
+from activations import ReLU, sigmoid, linear
+from loss_fcns import squared_loss 
 
 def data_generator(noise=0.1, n_samples=300, D1=True):
     # Create covariates and response variable
@@ -38,10 +37,10 @@ if __name__ == '__main__':
     D1 = True
     x_train, y_train,  x_validation, y_validation, x_test, y_test = data_generator(noise=0.05, D1=D1, n_samples=1000)
 
-    net = nn.NN([1,8,1], [ReLU, sigmoid], squared_loss)
-    net.learn(x_train, y_train, x_validation, y_validation, 10000, 100, 1e-3)
+    net = nn.NN([1,8,8,1], [ReLU,sigmoid, linear], squared_loss)
+    net.learn(x_train, y_train, x_validation, y_validation, 10000, 64, 1e-3)
     
-    print(np.mean(squared_loss.f(y_test, net.feed_forward(x_test, batch=True)[0])))
+    print('Final loss:', np.mean(squared_loss.f(y_test, net.feed_forward(x_test, batch=True)[0])))
     plt.scatter(x_test, y_test, label='true')
     plt.scatter(x_test, net.feed_forward(x_test, batch=True)[0], label='net')
     plt.legend()

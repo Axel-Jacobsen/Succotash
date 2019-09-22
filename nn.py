@@ -19,10 +19,11 @@ class NN:
         layer_iter = iter(layer_arr)
         prev_dim = layer_iter.__next__()
 
-        for dim in layer_iter:
+        for i, dim in enumerate(layer_iter):
             if random:
-                weight = np.random.randn(dim, prev_dim)
-                bias = np.random.randn(dim, 1)
+                bound = 4 * np.sqrt(6) / np.sqrt(layer_arr[i] + layer_arr[i+1])
+                weight = np.random.uniform(low=-bound, high=bound, size=(dim, prev_dim))
+                bias = np.random.uniform(low=-bound, high=bound, size=(dim, 1))
             else:
                 weight = np.zeros((dim, prev_dim))
                 bias = np.zeros((dim, 1))
