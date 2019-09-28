@@ -1,19 +1,15 @@
+#!/usr/bin/env python3
+
 import nn
 import numpy as np
 import matplotlib.pyplot as plt
 from activations import ReLU, sigmoid, linear
 from loss_fcns import squared_loss 
 
-def data_generator(noise=0.1, n_samples=300, D1=True):
-    # Create covariates and response variable
-    if D1:
-        X = np.linspace(-3, 3, num=n_samples).reshape(-1,1) # 1-D
-        np.random.shuffle(X)
-        y = np.random.normal((0.5*np.sin(X[:,0]*3) + X[:,0]), noise) # 1-D with trend
-    else:
-        X = np.random.multivariate_normal(np.zeros(3), noise*np.eye(3), size = n_samples) # 3-D
-        np.random.shuffle(X)
-        y = np.sin(X[:,0]) - 5*(X[:,1]**2) + 0.5*X[:,2] # 3-D
+def data_generator(noise=0.1, n_samples=300):
+    X = np.linspace(-3, 3, num=n_samples).reshape(-1,1) # 1-D
+    np.random.shuffle(X)
+    y = np.random.normal((0.5*np.sin(X[:,0]*3) + X[:,0]), noise) # 1-D with trend
 
     # Stack them together vertically to split data set
     data_set = np.vstack((X.T,y)).T
@@ -34,10 +30,12 @@ def data_generator(noise=0.1, n_samples=300, D1=True):
     return x_train, y_train.reshape(-1,1),  x_validation, y_validation.reshape(-1,1), x_test, y_test.reshape(-1,1)
 
 if __name__ == '__main__':
-    D1 = True
-    x_train, y_train,  x_validation, y_validation, x_test, y_test = data_generator(noise=0.05, D1=D1, n_samples=1000)
-
+    x_train, y_train,  x_validation, y_validation, x_test, y_test = data_generator(noise=0.05, n_samples=1000)
     net = nn.NN([1,8,8,1], [ReLU,sigmoid, linear], squared_loss)
+    x_train = x_train.reshape(-1, 1, 1)
+    print(x_train)
+    ys, ays, zs = net.feed_forward(x_train)
+
     net.learn(x_train, y_train, x_validation, y_validation, 10000, 64, 1e-3)
     
     print('Final loss:', np.mean(squared_loss.f(y_test, net.feed_forward(x_test, batch=True)[0])))
