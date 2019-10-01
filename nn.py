@@ -42,7 +42,7 @@ class NN:
             if random:
                 bound = 4 * np.sqrt(6) / np.sqrt(layer_arr[i] + layer_arr[i+1])
                 weight = np.random.uniform(low=-bound, high=bound, size=(dim, prev_dim))
-                bias = np.random.uniform(low=-bound, high=bound, size=(dim, 1))
+                bias   = np.random.uniform(low=-bound, high=bound, size=(dim, 1))
                 padded_weights = self.pad_edges(weight, max_row - dim, max_col - prev_dim)
                 padded_biases  = self.pad_edges(bias,   max_row - dim, 0)
             else:
@@ -55,7 +55,7 @@ class NN:
         
         return weights, biases
 
-    def feed_forward(self, xs):
+    def feed_forward(self, xs, trim=False):
         """
         We can only take 1D data rn
         Feed-forward through the entire network
@@ -65,14 +65,17 @@ class NN:
         col_xs = np.copy(xs)
         batch_size, num_rows, num_cols = col_xs.shape
         z = self.pad_edges(col_xs, self.max_row - num_rows, 0)
-        ays = np.zeros((batch_size, len(self.layers) - 1, num_rows, num_cols))
-        zs = np.zeros((batch_size, len(self.layers), num_rows, num_cols))
+        # make ays and zs a uniform size; that way we can do vectorization
+        ays = np.zeros((batch_size, self.max_row, len(self.layers))) 
+        zs  = np.zeros((batch_size, self.max_row, len(self.layers)))
         for i, W in enumerate(self.weights):
-            a = np.einsum('ij, bjk -> bik', W, zs[-1]) + self.biases[i] 
-            ays[:, i, :, :] = a
-            zs[:, i + 1, :, :] = self.hs[i].f(a)
- 
-        y = np.asarray(zs[:, -1, :, :])
+            layer_out = zs[..., i].reshape(batch_size, self.max_row, 1)
+            a = np.einsum('ij, bjk -> bik', W, layer_out) + self.biases[i] 
+            # shape of a is (batch_size, num_rows, 1) - needs to be (batch_size, num_rows) for this slice of ays
+            ays[..., i] = np.squeeze(a, axis=-1)
+            zs[..., i + 1] = np.squeeze(self.hs[i].f(a), axis=-1)
+        
+        y = np.asarray(zs[..., -1])
         return y, ays, zs
 
     def learn(self, xs, ys, xs_val, ys_val, epochs, batch_size, lr):
@@ -84,8 +87,8 @@ class NN:
             random_indicies = np.random.choice(xs.shape[0], size=batch_size)
             self.mini_batch(xs[random_indicies, :], ys[random_indicies, :], lr)
 
-            ys_out_test, _,_ = self.feed_forward(xs, batch=True)
-            ys_out_val, _, _ = self.feed_forward(xs_val, batch=True)
+            ys_out_test, _,_ = self.feed_forward(xs)
+            ys_out_val, _, _ = self.feed_forward(xs_val)
             train_loss = np.mean(self.cost_fcn.f(ys, ys_out_test))
             val_loss = np.mean(self.cost_fcn.f(ys_val, ys_out_val))
 
@@ -96,9 +99,9 @@ class NN:
         """
         batch_xs is the batch of inputs, batch_ys is batch of outputs, lr is learning rate
         """
-        weights, biases = self.make_network(self.layers, random=False)
+        weights, biases = self.make_network(random=False)
+        weight_grads, bias_grads = self.back_prop(batch_xs, batch_ys)
 
-        weight_grads, bias_grads = self.back_prop(batch_xs, batch_ys, batch=True)
         weights = [weight + weight_grad for weight, weight_grad in zip(weights, weight_grads)]
         biases  = [bias + bias_grad for bias, bias_grad in zip(biases, bias_grads)]
 
@@ -109,19 +112,28 @@ class NN:
         """
         xs,ts are lists of vectors (ts are targets for training i.e. true output given input x)
         """
-        grads, biases = self.make_network(self.layers, random=False)
-        ys, ays, zs = self.feed_forward(xs)
+        grads, biases = self.make_network(random=False)
+        ys, ays, zs = self.feed_forward(xs) # (64, 8) (64, 8, 4) (64, 8, 4)
         # delta_L: derivative of Cost fcn w.r.t. zs times derivative of nonlinear fcn of final layer
-        delta = self.cost_fcn.deriv(ts, ys) * self.hs[-1].deriv(ays[: -1, :, :])
+        ys = ys.reshape(-1, self.max_row, 1)
+        ts = ts.reshape(-1, self.layers[-1], 1)
+        ts = self.pad_edges(ts, self.max_row - self.layers[-1], 0)
+        delta = self.cost_fcn.deriv(ts, ys) * \
+                self.hs[-1].deriv(ays[..., -1, np.newaxis])
+
         """ dC/dw_jk = a_k * d_j """
-        grads[-1]  = np.einsum('bko, bjo -> bjk', zs[:, -2, :, :], delta) 
-        biases[-1] = delta
+        batch_weights = np.einsum('bko, bjo -> bjk', zs[..., -2, np.newaxis], delta) 
+        
+        grads[-1]  = np.sum(batch_weights, axis=0) 
+        biases[-1] = np.sum(delta,         axis=0)
         # back propogate through the layers
         for l in range(2, len(self.layers)):
-            nonlinear_deriv = self.hs[-l].deriv(ays[:, -l, :, :])
+            nonlinear_deriv = self.hs[-l].deriv(ays[..., -l, np.newaxis])
             delta = np.einsum('jk, bjo -> bko', self.weights[-l+1], delta) * nonlinear_deriv
-            grads[-l] = np.einsum('bjo, bko -> kj', zs[:, -l-1, :, :], delta)
-            biases[-l] = np.einsum('bko, bko -> ko', delta, delta)
+            batch_weights = np.einsum('bjo, bko -> bkj', zs[..., -l, np.newaxis], delta)
 
+            grads[-l]  = np.sum(batch_weights, axis=0)
+            biases[-l] = np.sum(delta,         axis=0)
+        
         return grads, biases
 
