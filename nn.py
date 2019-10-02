@@ -1,3 +1,12 @@
+"""
+Philosophy of this network:
+    The goal of me writing this was for me to cement my understanding of the basic fully connected feed-forward network. My original
+    implementation was quite slow, as it was not taking advantage of numpy vectorization - this version does. You can compare
+    the previous version of this file to this one, and see the significant training speed differences. I will say, that I think 
+    adding vectorization makes the code less readable (and also increases the required memory) as I had to pad all vectors and matricies
+    with zeros so each set of data had the same shape (and therefore it could be vectorized).
+"""
+
 import numpy as np
 
 class NN:
