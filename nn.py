@@ -66,16 +66,17 @@ class NN:
         batch_size, num_rows, num_cols = col_xs.shape
         z = self.pad_edges(col_xs, self.max_row - num_rows, 0)
         # make ays and zs a uniform size; that way we can do vectorization
-        ays = np.zeros((batch_size, self.max_row, len(self.layers))) 
+        ays = np.zeros((batch_size, self.max_row, len(self.layers) - 1)) 
         zs  = np.zeros((batch_size, self.max_row, len(self.layers)))
+        zs[..., 0] = np.squeeze(z, axis=-1)
         for i, W in enumerate(self.weights):
-            layer_out = zs[..., i].reshape(batch_size, self.max_row, 1)
+            layer_out = zs[..., i, np.newaxis]
             a = np.einsum('ij, bjk -> bik', W, layer_out) + self.biases[i] 
             # shape of a is (batch_size, num_rows, 1) - needs to be (batch_size, num_rows) for this slice of ays
             ays[..., i] = np.squeeze(a, axis=-1)
             zs[..., i + 1] = np.squeeze(self.hs[i].f(a), axis=-1)
         
-        y = np.asarray(zs[..., -1])
+        y = zs[..., -1, np.newaxis]
         return y, ays, zs
 
     def learn(self, xs, ys, xs_val, ys_val, epochs, batch_size, lr):
@@ -88,9 +89,10 @@ class NN:
             self.mini_batch(xs[random_indicies, :], ys[random_indicies, :], lr)
 
             ys_out_test, _,_ = self.feed_forward(xs)
-            ys_out_val, _, _ = self.feed_forward(xs_val)
-            train_loss = np.mean(self.cost_fcn.f(ys, ys_out_test))
-            val_loss = np.mean(self.cost_fcn.f(ys_val, ys_out_val))
+            ys_out_val,  _,_ = self.feed_forward(xs_val)
+            
+            train_loss = np.mean(self.cost_fcn.f(ys, ys_out_test[:, :1]))
+            val_loss = np.mean(self.cost_fcn.f(ys_val, ys_out_val[:, :1]))
 
             if epoch % 500 == 0:
                 print(f'epoch {epoch} \t val accuracy {val_loss:.3f} \t train accuracy {train_loss:.3f}')
@@ -99,14 +101,10 @@ class NN:
         """
         batch_xs is the batch of inputs, batch_ys is batch of outputs, lr is learning rate
         """
-        weights, biases = self.make_network(random=False)
         weight_grads, bias_grads = self.back_prop(batch_xs, batch_ys)
 
-        weights = [weight + weight_grad for weight, weight_grad in zip(weights, weight_grads)]
-        biases  = [bias + bias_grad for bias, bias_grad in zip(biases, bias_grads)]
-
-        self.weights = [w - lr * weight_grad for w, weight_grad in zip(self.weights, weights)]
-        self.biases  = [b - lr * bias_grad for b, bias_grad in zip(self.biases, biases)]
+        self.weights = [w - lr * weight_grad for w, weight_grad in zip(self.weights, weight_grads)]
+        self.biases  = [b - lr * bias_grad for b, bias_grad in zip(self.biases, bias_grads)]
 
     def back_prop(self, xs, ts, batch=False):
         """
@@ -115,7 +113,6 @@ class NN:
         grads, biases = self.make_network(random=False)
         ys, ays, zs = self.feed_forward(xs) # (64, 8) (64, 8, 4) (64, 8, 4)
         # delta_L: derivative of Cost fcn w.r.t. zs times derivative of nonlinear fcn of final layer
-        ys = ys.reshape(-1, self.max_row, 1)
         ts = ts.reshape(-1, self.layers[-1], 1)
         ts = self.pad_edges(ts, self.max_row - self.layers[-1], 0)
         delta = self.cost_fcn.deriv(ts, ys) * \
@@ -123,7 +120,7 @@ class NN:
 
         """ dC/dw_jk = a_k * d_j """
         batch_weights = np.einsum('bko, bjo -> bjk', zs[..., -2, np.newaxis], delta) 
-        
+
         grads[-1]  = np.sum(batch_weights, axis=0) 
         biases[-1] = np.sum(delta,         axis=0)
         # back propogate through the layers
@@ -134,6 +131,6 @@ class NN:
 
             grads[-l]  = np.sum(batch_weights, axis=0)
             biases[-l] = np.sum(delta,         axis=0)
-        
+
         return grads, biases
 
