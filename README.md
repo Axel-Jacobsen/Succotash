@@ -11,6 +11,4 @@ loss_fcns.py   -> Loss/Error/Cost functions
 ```
 
 ## TODO:
-- Vectorize the back_prop method so training is faster
-- get basic classification working
-
+- Implement basic classification
