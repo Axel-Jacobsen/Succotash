@@ -12,6 +12,7 @@ import numpy as np
 class NN:
 
     def __init__(self, layers, hs, cost_fcn):
+        assert len(hs) == len(layers) - 1
         self.layers = layers
         self.hs = hs
         self.cost_fcn = cost_fcn
