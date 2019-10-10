@@ -1,7 +1,10 @@
-# OCTO-SUCCOTASH
+# SUCCOTASH
 
-Thanks Github for the cool name!
+The goal of this is to implement basic neural network architectures with a focus on...
+  1. the math behind machine learning
+  2. fast training on a CPU
 
+#### File Structure
 ```
 nn.py          -> the neural network
 train.py       -> a file to train and test the network
@@ -10,5 +13,6 @@ activations.py -> nonlinear activation functions
 loss_fcns.py   -> Loss/Error/Cost functions
 ```
 
-## TODO:
+#### TODO:
 - Implement basic classification
+- Implement LSTM
