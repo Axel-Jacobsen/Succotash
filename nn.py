@@ -73,7 +73,7 @@ class NN:
         - x, z, a are all vectors of inputs, outputs, and linear outputs at layers
         """
         col_xs = np.copy(xs)
-        batch_size, num_rows, num_cols = col_xs.shape
+        batch_size, num_rows, _ = col_xs.shape
         z = self.pad_edges(col_xs, self.max_row - num_rows, 0)
         # make ays and zs a uniform size; that way we can do vectorization
         ays = np.zeros((batch_size, self.max_row, len(self.layers) - 1)) 
@@ -85,7 +85,7 @@ class NN:
             # shape of a is (batch_size, num_rows, 1) - needs to be (batch_size, num_rows) for this slice of ays
             ays[..., i] = np.squeeze(a, axis=-1)
             zs[..., i + 1] = np.squeeze(self.hs[i].f(a), axis=-1)
-        
+       
         y = zs[..., -1, np.newaxis]
         return y, ays, zs
 
@@ -137,10 +137,10 @@ class NN:
         for l in range(2, len(self.layers)):
             nonlinear_deriv = self.hs[-l].deriv(ays[..., -l, np.newaxis])
             delta = np.einsum('jk, bjo -> bko', self.weights[-l+1], delta) * nonlinear_deriv
-            batch_weights = np.einsum('bjo, bko -> bkj', zs[..., -l, np.newaxis], delta)
+            batch_weights = np.einsum('bko, bjo -> bjk', zs[..., -l - 1, np.newaxis], delta)
 
             grads[-l]  = np.sum(batch_weights, axis=0)
             biases[-l] = np.sum(delta,         axis=0)
-
+        
         return grads, biases
 

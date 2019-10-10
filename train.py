@@ -32,7 +32,7 @@ def data_generator(noise=0.1, n_samples=300):
 if __name__ == '__main__':
     x_train, y_train,  x_val, y_val, x_test, y_test = data_generator(noise=0.05, n_samples=1000)
     net = nn.NN([1, 8, 8, 1], [ReLU, sigmoid, linear], squared_loss)
-    net.learn(x_train, y_train, x_val, y_val, 10000, 64, 1e-5)
+    net.learn(x_train, y_train, x_val, y_val, 10000, 64, 1e-3)
     
     print('Final loss:', np.mean(squared_loss.f(y_test, net.feed_forward(x_test)[0][:, :1])))
     plt.scatter(x_test, y_test, label='true')
