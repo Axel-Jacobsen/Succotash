@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-import nn
+import ffnn
 import numpy as np
 import matplotlib.pyplot as plt
 from activations import ReLU, leaky_ReLU, sigmoid, linear, tanh
-from loss_fcns import squared_loss 
+from loss_fcns import squared_loss
 
 def data_generator(noise=0.1, n_samples=300):
     X = np.linspace(-3, 3, num=n_samples).reshape(-1,1) # 1-D
@@ -30,11 +30,11 @@ def data_generator(noise=0.1, n_samples=300):
     return x_train, y_train.reshape(-1,1),  x_validation, y_validation.reshape(-1,1), x_test, y_test.reshape(-1,1)
 
 if __name__ == '__main__':
-    x_train, y_train,  x_val, y_val, x_test, y_test = data_generator(noise=0.05, n_samples=1000)
-    net = nn.NN([1, 8, 8, 1], [ReLU, sigmoid, linear], squared_loss)
-    net.learn(x_train, y_train, x_val, y_val, 10000, 64, 1e-3)
+    x_train, y_train,  x_val, y_val, x_test, y_test = data_generator(noise=0.00, n_samples=10000)
+    net = ffnn.FFNN([1, 8, 8, 1], [leaky_ReLU, sigmoid, linear], squared_loss)
+    net.learn(x_train, y_train, x_val, y_val, 1000, 64, 1e-3)
     
-    print('Final loss:', np.mean(squared_loss.f(y_test, net.feed_forward(x_test)[0][:, :1])))
+    print('Test loss: {:.3f}'.format(np.mean(squared_loss.f(y_test, net.feed_forward(x_test)[0][:, :1]))))
     plt.scatter(x_test, y_test, label='true')
     plt.scatter(x_test, net.feed_forward(x_test)[0][:, :1], label='net')
     plt.legend()

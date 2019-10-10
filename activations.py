@@ -36,7 +36,7 @@ class eLU:
 class ReLU:
 
     def f(v):
-        return np.maximum(v,0)
+        return np.maximum(v, 0)
     
     def deriv(v):
         return np.greater(v, 0).astype(float)
@@ -44,7 +44,7 @@ class ReLU:
 class leaky_ReLU:
 
     def f(v):
-        return np.maximum(0,v) + 0.1 * np.minimum(0,v)
+        return np.maximum(v, 0) + 0.1 * np.minimum(v, 0)
 
     def deriv(v):
         return np.greater(v, 0).astype(float) + 0.1 * np.less(v, 0).astype(float)

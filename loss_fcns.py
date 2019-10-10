@@ -16,3 +16,11 @@ class squared_loss:
     def deriv(t, y):
         return y - t
 
+class abs_loss:
+
+    def f(t, y):
+        return np.abs(y-t)
+
+    def deriv(t, y):
+        return np.greater(y - t, 0).astype(float)
+

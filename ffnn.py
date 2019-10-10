@@ -2,14 +2,14 @@
 Philosophy of this network:
     The goal that I had while writing this was for me to cement my understanding of the basic fully connected feed-forward network.
     My original implementation was quite slow, as it was not taking advantage of numpy vectorization - this version does. You can compare
-    the previous version of this file to this one, and see the significant training speed differences. I will say, that I think 
-    adding vectorization makes the code less readable (and also increases the required memory) as I had to pad all vectors and matricies
-    with zeros so each set of data had the same shape (and therefore it could be vectorized).
+    the previous version of this file to this one (filename nn.py, commit 9cb3da3ce582e940ed862f95930879c8be1721d1), and see the 
+    significant training speed differences. I will say, adding vectorization makes the code less readable (and also increases the
+    required memory) as I had to pad all vectors and matricies with zeros so each set of data had the same shape (and therefore it could be vectorized).
 """
 
 import numpy as np
 
-class NN:
+class FFNN:
 
     def __init__(self, layers, hs, cost_fcn):
         assert len(hs) == len(layers) - 1
@@ -18,22 +18,6 @@ class NN:
         self.cost_fcn = cost_fcn
         self.max_row, self.max_col = self.get_weights_matrix_max_shape()
         self.weights, self.biases = self.make_network()
-
-    def get_weights_matrix_max_shape(self):
-        max_row = max_col = 0
-        for dim, prev_dim in zip(self.layers[1:], self.layers):
-            max_row, max_col = max(max_row, dim), max(max_col, prev_dim)
-        return max_row, max_col
-
-    def pad_last_2_dims(self, M, bottom_pad, right_pad):
-        out = [(0,0) for _ in range(len(M.shape) - 2)]
-        out.append((0, bottom_pad))
-        out.append((0, right_pad))
-        return tuple(out)
-    
-    def pad_edges(self, M, bottom_pad, right_pad):
-        pad_tuple = self.pad_last_2_dims(M, bottom_pad, right_pad)
-        return np.pad(M, pad_tuple, 'constant', constant_values=0)
 
     def make_network(self, random=True):
         """ We padd the weight matricies to the largest weight matrix, so we can vectorize everything and be quick - maybe it will work
@@ -89,33 +73,6 @@ class NN:
         y = zs[..., -1, np.newaxis]
         return y, ays, zs
 
-    def learn(self, xs, ys, xs_val, ys_val, epochs, batch_size, lr):
-        """
-        xs/ys is the input/output data, xs_val/ys_val is input/output validation, epochs is the number of batches to train, batch size
-        is the number of input/outputs to use in each batch, and lr is learning rate
-        """
-        for epoch in range(epochs):
-            random_indicies = np.random.choice(xs.shape[0], size=batch_size)
-            self.mini_batch(xs[random_indicies, :], ys[random_indicies, :], lr)
-
-            ys_out_test, _,_ = self.feed_forward(xs)
-            ys_out_val,  _,_ = self.feed_forward(xs_val)
-            
-            train_loss = np.mean(self.cost_fcn.f(ys, ys_out_test[:, :1]))
-            val_loss = np.mean(self.cost_fcn.f(ys_val, ys_out_val[:, :1]))
-
-            if epoch % 500 == 0:
-                print(f'epoch {epoch} \t val accuracy {val_loss:.3f} \t train accuracy {train_loss:.3f}')
-
-    def mini_batch(self, batch_xs, batch_ys, lr):
-        """
-        batch_xs is the batch of inputs, batch_ys is batch of outputs, lr is learning rate
-        """
-        weight_grads, bias_grads = self.back_prop(batch_xs, batch_ys)
-
-        self.weights = [w - lr * weight_grad for w, weight_grad in zip(self.weights, weight_grads)]
-        self.biases  = [b - lr * bias_grad for b, bias_grad in zip(self.biases, bias_grads)]
-
     def back_prop(self, xs, ts, batch=False):
         """
         xs,ts are lists of vectors (ts are targets for training i.e. true output given input x)
@@ -143,4 +100,47 @@ class NN:
             biases[-l] = np.sum(delta,         axis=0)
         
         return grads, biases
+
+    def learn(self, xs, ys, xs_val, ys_val, epochs, batch_size, lr):
+        """
+        xs/ys is the input/output data, xs_val/ys_val is input/output validation, epochs is the number of batches to train, batch size
+        is the number of input/outputs to use in each batch, and lr is learning rate
+        """
+        for epoch in range(epochs):
+            random_indicies = np.random.choice(xs.shape[0], size=batch_size)
+            self.mini_batch(xs[random_indicies, :], ys[random_indicies, :], lr)
+
+            ys_out_test, _,_ = self.feed_forward(xs)
+            ys_out_val,  _,_ = self.feed_forward(xs_val)
+            
+            train_loss = np.mean(self.cost_fcn.f(ys, ys_out_test[:, :1]))
+            val_loss = np.mean(self.cost_fcn.f(ys_val, ys_out_val[:, :1]))
+
+            if epoch % 500 == 0:
+                print(f'epoch {epoch} \t val accuracy {val_loss:.3f} \t train accuracy {train_loss:.3f}')
+
+    def mini_batch(self, batch_xs, batch_ys, lr):
+        """
+        batch_xs is the batch of inputs, batch_ys is batch of outputs, lr is learning rate
+        """
+        weight_grads, bias_grads = self.back_prop(batch_xs, batch_ys)
+
+        self.weights = [w - lr * weight_grad for w, weight_grad in zip(self.weights, weight_grads)]
+        self.biases  = [b - lr * bias_grad for b, bias_grad in zip(self.biases, bias_grads)]
+
+    def get_weights_matrix_max_shape(self):
+        max_row = max_col = 0
+        for dim, prev_dim in zip(self.layers[1:], self.layers):
+            max_row, max_col = max(max_row, dim), max(max_col, prev_dim)
+        return max_row, max_col
+
+    def pad_last_2_dims(self, M, bottom_pad, right_pad):
+        out = [(0,0) for _ in range(len(M.shape) - 2)]
+        out.append((0, bottom_pad))
+        out.append((0, right_pad))
+        return tuple(out)
+    
+    def pad_edges(self, M, bottom_pad, right_pad):
+        pad_tuple = self.pad_last_2_dims(M, bottom_pad, right_pad)
+        return np.pad(M, pad_tuple, 'constant', constant_values=0)
 
