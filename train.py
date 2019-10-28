@@ -29,10 +29,11 @@ def data_generator(noise=0.1, n_samples=300):
     
     return x_train, y_train.reshape(-1,1),  x_validation, y_validation.reshape(-1,1), x_test, y_test.reshape(-1,1)
 
+
 if __name__ == '__main__':
-    x_train, y_train,  x_val, y_val, x_test, y_test = data_generator(noise=0.00, n_samples=10000)
+    x_train, y_train,  x_val, y_val, x_test, y_test = data_generator(noise=0.00, n_samples=1000)
     net = ffnn.FFNN([1, 8, 8, 1], [leaky_ReLU, sigmoid, linear], squared_loss)
-    net.learn(x_train, y_train, x_val, y_val, 1000, 64, 1e-3)
+    net.learn(x_train, y_train, x_val, y_val, 10000, 32, 1e-3)
     
     print('Test loss: {:.3f}'.format(np.mean(squared_loss.f(y_test, net.feed_forward(x_test)[0][:, :1]))))
     plt.scatter(x_test, y_test, label='true')

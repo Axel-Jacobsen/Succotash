@@ -49,7 +49,7 @@ class FFNN:
         
         return weights, biases
 
-    def feed_forward(self, xs, trim=False):
+    def feed_forward(self, xs):
         """
         We can only take 1D data rn
         Feed-forward through the entire network
@@ -57,6 +57,11 @@ class FFNN:
         - x, z, a are all vectors of inputs, outputs, and linear outputs at layers
         """
         col_xs = np.copy(xs)
+
+        # If xs is not a batch, make it a batch for the ff
+        if len(col_xs.shape) == 2:
+            col_xs = col_xs.reshape(1, col_xs.shape[0], col_xs.shape[1])
+
         batch_size, num_rows, _ = col_xs.shape
         z = self.pad_edges(col_xs, self.max_row - num_rows, 0)
         # make ays and zs a uniform size; that way we can do vectorization
