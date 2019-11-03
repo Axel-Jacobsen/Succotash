@@ -12,7 +12,3 @@ test.py        -> small basic tests that the network functions as expected
 activations.py -> nonlinear activation functions
 loss_fcns.py   -> Loss/Error/Cost functions
 ```
-
-#### TODO:
-- Implement basic classification
-- Implement LSTM
