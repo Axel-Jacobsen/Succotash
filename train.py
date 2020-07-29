@@ -6,38 +6,61 @@ import matplotlib.pyplot as plt
 from activations import ReLU, leaky_ReLU, sigmoid, linear, tanh
 from loss_fcns import squared_loss
 
+
 def data_generator(noise=0.1, n_samples=300):
-    X = np.linspace(-3, 3, num=n_samples).reshape(-1,1) # 1-D
+    X = np.linspace(-3, 3, num=n_samples).reshape(-1, 1)  # 1-D
     np.random.shuffle(X)
-    y = np.random.normal((0.5*np.sin(X[:,0]*3) + X[:,0]), noise) # 1-D with trend
+    y = np.random.normal((0.5 * np.sin(X[:, 0] * 3) + X[:, 0]), noise)  # 1-D with trend
 
     # Stack them together vertically to split data set
-    data_set = np.vstack((X.T,y)).T
+    data_set = np.vstack((X.T, y)).T
 
-    train, validation, test = np.split(data_set, [int(0.35*n_samples), int(0.7*n_samples)], axis=0)
+    train, validation, test = np.split(
+        data_set, [int(0.35 * n_samples), int(0.7 * n_samples)], axis=0
+    )
 
     # Standardization of the data, remember we do the standardization with the training set mean and standard deviation
     train_mu = np.mean(train, axis=0)
     train_sigma = np.std(train, axis=0)
 
-    train = (train-train_mu)/train_sigma
-    validation = (validation-train_mu)/train_sigma
-    test = (test-train_mu)/train_sigma
+    train = (train - train_mu) / train_sigma
+    validation = (validation - train_mu) / train_sigma
+    test = (test - train_mu) / train_sigma
 
-    x_train, x_validation, x_test = train[:,:-1, np.newaxis], validation[:,:-1, np.newaxis], test[:,:-1, np.newaxis]
-    y_train, y_validation, y_test = train[:,-1, np.newaxis], validation[:,-1, np.newaxis], test[:,-1, np.newaxis]
-    
-    return x_train, y_train.reshape(-1,1),  x_validation, y_validation.reshape(-1,1), x_test, y_test.reshape(-1,1)
+    x_train, x_validation, x_test = (
+        train[:, :-1, np.newaxis],
+        validation[:, :-1, np.newaxis],
+        test[:, :-1, np.newaxis],
+    )
+    y_train, y_validation, y_test = (
+        train[:, -1, np.newaxis],
+        validation[:, -1, np.newaxis],
+        test[:, -1, np.newaxis],
+    )
+
+    return (
+        x_train,
+        y_train.reshape(-1, 1),
+        x_validation,
+        y_validation.reshape(-1, 1),
+        x_test,
+        y_test.reshape(-1, 1),
+    )
 
 
-if __name__ == '__main__':
-    x_train, y_train,  x_val, y_val, x_test, y_test = data_generator(noise=0.00, n_samples=1000)
-    net = ffnn.FFNN([1, 8, 8, 1], [leaky_ReLU, sigmoid, linear], squared_loss)
+if __name__ == "__main__":
+    x_train, y_train, x_val, y_val, x_test, y_test = data_generator(
+        noise=0.10, n_samples=1000
+    )
+    net = ffnn.FFNN([1, 8, 16, 1], [leaky_ReLU, sigmoid, linear], squared_loss)
     net.learn(x_train, y_train, x_val, y_val, 10000, 32, 1e-3)
-    
-    print('Test loss: {:.3f}'.format(np.mean(squared_loss.f(y_test, net.feed_forward(x_test)[0][:, :1]))))
-    plt.scatter(x_test, y_test, label='true')
-    plt.scatter(x_test, net.feed_forward(x_test)[0][:, :1], label='net')
+
+    print(
+        "Test loss: {:.3f}".format(
+            np.mean(squared_loss.f(y_test, net.feed_forward(x_test)[0][:, :1]))
+        )
+    )
+    plt.scatter(x_test, y_test, label="true")
+    plt.scatter(x_test, net.feed_forward(x_test)[0][:, :1], label="net")
     plt.legend()
     plt.show()
-
