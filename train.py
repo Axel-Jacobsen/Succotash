@@ -48,19 +48,34 @@ def data_generator(noise=0.1, n_samples=300):
     )
 
 
-if __name__ == "__main__":
-    x_train, y_train, x_val, y_val, x_test, y_test = data_generator(
-        noise=0.10, n_samples=1000
-    )
-    net = ffnn.FFNN([1, 8, 16, 1], [leaky_ReLU, sigmoid, linear], squared_loss)
-    net.learn(x_train, y_train, x_val, y_val, 10000, 32, 1e-3)
+def mnist():
+    def load_data(fname):
+        data_folder = "mnist_data/"
+        with open(data_folder + fname, "rb") as f:
+            data = f.read()
+        return np.frombuffer(data, dtype=np.uint8)
 
-    print(
-        "Test loss: {:.3f}".format(
-            np.mean(squared_loss.f(y_test, net.feed_forward(x_test)[0][:, :1]))
-        )
+    x_train = load_data("train-images-idx3-ubyte")
+    y_train = load_data("train-labels-idx1-ubyte")
+    x_test = load_data("t10k-images-idx3-ubyte")
+    y_test = load_data("t10k-labels-idx1-ubyte")
+
+    return (
+        x_train[16:].reshape((-1, 28, 28)),
+        y_train[8:].reshape((-1, 1)),
+        x_test[16:].reshape((-1, 28, 28)),
+        y_test[8:].reshape((-1, 1)),
     )
-    plt.scatter(x_test, y_test, label="true")
-    plt.scatter(x_test, net.feed_forward(x_test)[0][:, :1], label="net")
+
+
+if __name__ == "__main__":
+    X_train, Y_train, X_test, Y_test = mnist()
+    net = ffnn.FFNN([784, 128, 10], [leaky_ReLU, leaky_ReLU], cross_entropy_loss)
+    net.learn(X_train, Y_train, 10000, 32, 1e-3)
+
+    print("Test loss: {:.3f}".format(np.mean(cross_entropY_loss.f(Y_test, net.feed_forward(X_test)[0][:, :1]))))
+    plt.scatter(X_test, Y_test, label="true")
+    plt.scatter(X_test, net.feed_forward(X_test)[0][:, :1], label="net")
     plt.legend()
     plt.show()
+
