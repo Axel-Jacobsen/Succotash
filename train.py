@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
-import ffnn
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plta
+
+import ffnn
+
+from loss_fcns import squared_loss, cross_entropy_loss
 from activations import ReLU, leaky_ReLU, sigmoid, linear, tanh
-from loss_fcns import squared_loss
 
 
 def data_generator(noise=0.1, n_samples=300):
@@ -15,9 +17,7 @@ def data_generator(noise=0.1, n_samples=300):
     # Stack them together vertically to split data set
     data_set = np.vstack((X.T, y)).T
 
-    train, validation, test = np.split(
-        data_set, [int(0.35 * n_samples), int(0.7 * n_samples)], axis=0
-    )
+    train, validation, test = np.split(data_set, [int(0.35 * n_samples), int(0.7 * n_samples)], axis=0)
 
     # Standardization of the data, remember we do the standardization with the training set mean and standard deviation
     train_mu = np.mean(train, axis=0)
@@ -70,12 +70,11 @@ def mnist():
 
 if __name__ == "__main__":
     X_train, Y_train, X_test, Y_test = mnist()
-    net = ffnn.FFNN([784, 128, 10], [leaky_ReLU, leaky_ReLU], cross_entropy_loss)
-    net.learn(X_train, Y_train, 10000, 32, 1e-3)
+    net = ffnn.FFNN([784, 128, 10], [leaky_ReLU, leaky_ReLU, log_softmax], cross_entropy_loss)
+    net.learn(X_train.reshape((-1, 28 * 28)), Y_train, 10000, 32, 1e-3)
 
     print("Test loss: {:.3f}".format(np.mean(cross_entropY_loss.f(Y_test, net.feed_forward(X_test)[0][:, :1]))))
-    plt.scatter(X_test, Y_test, label="true")
-    plt.scatter(X_test, net.feed_forward(X_test)[0][:, :1], label="net")
+    plt.scatter(X_test.reshape((-1, 28 * 28)), Y_test, label="true")
+    plt.scatter(X_test.reshape((-1, 28 * 28)), net.feed_forward(X_test)[0][:, :1], label="net")
     plt.legend()
     plt.show()
-
