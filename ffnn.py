@@ -2,12 +2,16 @@
 Philosophy of this network:
     The goal that I had while writing this was for me to cement my understanding of the basic fully connected feed-forward network.
     My original implementation was quite slow, as it was not taking advantage of numpy vectorization - this version does. You can compare
-    the previous version of this file to this one (filename nn.py, commit 9cb3da3ce582e940ed862f95930879c8be1721d1), and see the 
+    the previous version of this file to this one (filename nn.py, commit 9cb3da3ce582e940ed862f95930879c8be1721d1), and see the
     significant training speed differences. I will say, adding vectorization makes the code less readable (and also increases the
     required memory) as I had to pad all vectors and matricies with zeros so each set of data had the same shape (and therefore it could be vectorized).
 """
 
 import numpy as np
+
+
+np.set_printoptions(suppress=True)
+np.random.seed(0)
 
 
 class FFNN:
@@ -33,10 +37,10 @@ class FFNN:
         for i, dim in enumerate(layer_iter):
             if random:
                 bound = 4 * np.sqrt(6) / np.sqrt(layer_arr[i] + layer_arr[i + 1])
-                weight_matrix = np.random.uniform(low=-bound, high=bound, size=(prev_dim, dim)).astype(np.float32)
-                biases_matrix = np.random.uniform(low=-bound, high=bound, size=(1, dim)).astype(np.float32)
+                weight_matrix = np.random.uniform(low=-bound, high=bound, size=(dim, prev_dim)).astype(np.float32)
+                biases_matrix = np.random.uniform(low=-bound, high=bound, size=(dim, 1)).astype(np.float32)
             else:
-                weight_matrix = np.zeros((prev_dim, dim), dtype=np.float32)
+                weight_matrix = np.zeros((dim, prev_dim), dtype=np.float32)
                 biases_matrix = np.zeros((dim, 1), dtype=np.float32)
 
             weights.append(weight_matrix)
@@ -53,69 +57,87 @@ class FFNN:
         xs has to be of shape (batch_size, num features)
         - x, z, a are all vectors of inputs, outputs, and linear outputs at layers
         """
-        batch_size, num_features = xs.shape
+        zs = []
+        activations = []
 
-        # make activations and zs a uniform size; that way we can do vectorization
-        # zs direct output from layer
-        # ignore the first layer, as this is the input layer.
-        zs = [np.zeros((batch_size, layer_width), dtype=np.float32) for layer_width in self.layers[1:]]
-        # activations are zs after nonlinearities
-        activations = [np.zeros((batch_size, layer_width), dtype=np.float32) for layer_width in self.layers]
-
-        activation = xs.astype(np.float32)
-        activations[0][:, :] = activation
-        for i, W in enumerate(self.weights):
-            z = np.dot(activation, W) + self.biases[i]
-            zs[i] = z
+        activation = xs.astype(np.float32) / 255
+        activations.append(activation)
+        for i, (W, b) in enumerate(zip(self.weights, self.biases)):
+            z = np.einsum("ij, jb -> ib", W, activation) + b
+            zs.append(z)
             activation = self.hs[i].f(z)
-            activations[i + 1] = activation
+            activations.append(activation)
+            assert z.shape == activation.shape
 
-        y = activations[-1]
-        return y, activations, zs if training else y
+        return (activation, activations, zs) if training else activation
 
     def back_prop(self, xs, ts, batch=False):
         """
         xs,ts are lists of vectors (ts are targets for training i.e. true output given input x)
         """
-        grads, biases = self.make_network(random=False)
+        weight_grads, bias_grads = self.make_network(
+            random=False
+        )  # todo: can remove this as we aren't copying in stuff
         ys, activations, zs = self.feed_forward(xs, training=True)
 
-        # delta_L: derivative of Cost fcn w.r.t. zs times derivative of nonlinear fcn of final layer
+        # delta_L = grad cost_fcn(outputs) * activation_fcn.deriv(weighted_output_last_layer)
+        # should be hadamard product
+        # Also, ys is just activations[-1]
+        assert ts.shape == ys.shape
         delta = self.cost_fcn.deriv(ts, ys) * self.hs[-1].deriv(zs[-1])
 
-        # dC/dw_jk = activation_k * delta_j
-        batch_weights = np.dot(zs[-2].T, delta)
+        batch_weights = np.einsum("ib, jb -> ijb", delta, activations[-2])
+        # batch_weights = np.dot(delta, activations[-2].T)
 
-        grads[-1] = np.sum(batch_weights, axis=0)
-        biases[-1] = np.sum(delta, axis=0)
+        # sum along batch
+        # can throw assert that shapes match self.bias_grads & self.weight_grads
+        bias_grads[-1] = np.sum(delta, axis=-1).reshape(-1, 1)
+        weight_grads[-1] = np.sum(batch_weights, axis=-1)
 
         # back propogate through layers
         for l in range(2, len(self.layers)):
             nonlinear_deriv = self.hs[-l].deriv(zs[-l])
-            delta = np.dot(delta, self.weights[-l + 1].T) * nonlinear_deriv
-            batch_weights = np.dot(activations[-l - 1].T, delta)
+            delta = np.dot(self.weights[-l + 1].T, delta) * nonlinear_deriv
+            batch_weights = np.einsum("ib, jb -> ijb", delta, activations[-l - 1])
 
-            biases[-l] = np.sum(delta, axis=0)
-            grads[-l] = np.sum(batch_weights, axis=0)
+            bias_grads[-l] = np.sum(delta, axis=-1).reshape(-1, 1)
+            weight_grads[-l] = np.sum(batch_weights, axis=-1)
 
-        return grads, biases
+        for new_b, new_g, self_b, self_g in zip(bias_grads, weight_grads, self.biases, self.weights):
+            assert new_b.shape == self_b.shape
+            assert new_g.shape == self_g.shape
+
+        return weight_grads, bias_grads
 
     def learn(self, xs, ys, epochs, batch_size, lr):
         """
-        xs/ys is the input/output data, xs_val/ys_val is input/output validation, epochs is
+        xs/ys is the input/output data, epochs is
         the number of batches to train, batch size is the number of input/outputs to
-        use in each batch, and lr is learning rate
+        use in each batch, and lr is learning rate.
+
+        xs, ys have the input vectors as COLUMNS, so xs shape should be (num_features, batch_size)
+        e.g. with MNIST, each image is 28*28=784 features, so xs is (784, 60000)
+        since there are 10 classes in mnist, y should be (10, 60000)
         """
+        losses = []
+        accuracies = []
+        random_indicies = np.random.choice(xs.shape[1], size=batch_size)
         for epoch in range(epochs):
-            random_indicies = np.random.choice(xs.shape[0], size=batch_size)
-            self.mini_batch(xs[random_indicies, :], ys[random_indicies, :], lr)
+            self.mini_batch(xs[:, random_indicies], ys[:, random_indicies], lr)
 
-            ys_out_test, _, _ = self.feed_forward(xs)
+            ys_out_test = self.feed_forward(xs[:, random_indicies], training=False)
+            ts = ys[:, random_indicies]
 
-            train_loss = np.mean(self.cost_fcn.f(ys, ys_out_test[:, :1]))
+            loss = self.cost_fcn.f(ts, ys_out_test)
+            train_loss = np.mean(loss)
 
-            if epoch % 500 == 0:
-                print(f"epoch {epoch} \t train loss {train_loss:.3f}")
+            losses.append(train_loss)
+            accuracies.append(np.sum(np.argmax(ts, axis=0) == np.argmax(ys_out_test, axis=0)) / ts.shape[-1])
+
+            if epoch % 50 == 0:
+                print(f"epoch {epoch} \t train loss {train_loss:.8f}")
+
+        return losses, accuracies
 
     def mini_batch(self, batch_xs, batch_ys, lr):
         """
@@ -124,6 +146,6 @@ class FFNN:
         weight_grads, bias_grads = self.back_prop(batch_xs, batch_ys)
 
         self.weights = [
-            w - (lr / batch_xs.shape[0]) * weight_grad for w, weight_grad in zip(self.weights, weight_grads)
+            w - (lr / batch_xs.shape[-1]) * weight_grad for w, weight_grad in zip(self.weights, weight_grads)
         ]
-        self.biases = [b - (lr / batch_xs.shape[0]) * bias_grad for b, bias_grad in zip(self.biases, bias_grads)]
+        self.biases = [b - (lr / batch_xs.shape[-1]) * bias_grad for b, bias_grad in zip(self.biases, bias_grads)]

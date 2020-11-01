@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 import numpy as np
-import matplotlib.pyplot as plta
+import matplotlib.pyplot as plt
 
 import ffnn
 
 from loss_fcns import squared_loss, cross_entropy_loss
-from activations import ReLU, leaky_ReLU, sigmoid, linear, tanh
+from activations import ReLU, leaky_ReLU, sigmoid, linear, tanh, softmax
 
 
 def data_generator(noise=0.1, n_samples=300):
@@ -49,6 +49,9 @@ def data_generator(noise=0.1, n_samples=300):
 
 
 def mnist():
+    def _get_one_hot(targets, nb_classes):
+        return np.eye(nb_classes)[np.array(targets).reshape(-1)].reshape((nb_classes, targets.shape[1]))
+
     def load_data(fname):
         data_folder = "mnist_data/"
         with open(data_folder + fname, "rb") as f:
@@ -61,20 +64,28 @@ def mnist():
     y_test = load_data("t10k-labels-idx1-ubyte")
 
     return (
-        x_train[16:].reshape((-1, 28, 28)),
-        y_train[8:].reshape((-1, 1)),
-        x_test[16:].reshape((-1, 28, 28)),
-        y_test[8:].reshape((-1, 1)),
+        x_train[16:].reshape((28 * 28, -1)),
+        _get_one_hot(y_train[8:].reshape((1, -1)), 10),
+        x_test[16:].reshape((28 * 28, -1)),
+        _get_one_hot(y_test[8:].reshape((1, -1)), 10),
     )
 
 
 if __name__ == "__main__":
     X_train, Y_train, X_test, Y_test = mnist()
-    net = ffnn.FFNN([784, 128, 10], [leaky_ReLU, leaky_ReLU, log_softmax], cross_entropy_loss)
-    net.learn(X_train.reshape((-1, 28 * 28)), Y_train, 10000, 32, 1e-3)
+    net = ffnn.FFNN([784, 256, 10], [leaky_ReLU, softmax], cross_entropy_loss)
+    losses, accuracies = net.learn(X_train, Y_train, 1000, 2, 1e-3)
 
-    print("Test loss: {:.3f}".format(np.mean(cross_entropY_loss.f(Y_test, net.feed_forward(X_test)[0][:, :1]))))
-    plt.scatter(X_test.reshape((-1, 28 * 28)), Y_test, label="true")
-    plt.scatter(X_test.reshape((-1, 28 * 28)), net.feed_forward(X_test)[0][:, :1], label="net")
-    plt.legend()
+    np.save("weights.npy", np.asarray(net.weights, dtype=object))
+    np.save("biases.npy", np.asarray(net.biases, dtype=object))
+
+    test_out = net.feed_forward(X_test)
+    test_argmax = np.argmax(test_out, axis=0)
+    Y_test_argmax = np.argmax(Y_test, axis=0)
+
+    print("Test loss: {:.3f}".format(np.mean(cross_entropy_loss.f(Y_test, test_out))))
+    print("Test accuracy: {:.3f}".format(np.sum(Y_test_argmax == test_argmax) / Y_test_argmax.shape[0]))
+
+    plt.plot(range(len(losses)), losses)
+    plt.plot(range(len(losses)), accuracies)
     plt.show()

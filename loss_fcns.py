@@ -2,8 +2,12 @@ import numpy as np
 
 
 class cross_entropy_loss:
+    EPS = 1e-9
+
     def f(t, y):
-        return -1 * t * np.log(y)
+        ret = -t * np.log(np.clip(y, cross_entropy_loss.EPS, 1 - cross_entropy_loss.EPS))
+        a = ret.sum(axis=0)
+        return ret.sum(axis=0)
 
     def deriv(t, y):
         return y - t

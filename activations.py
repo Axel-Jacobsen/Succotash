@@ -1,6 +1,17 @@
 import numpy as np
 
 
+class softmax:
+    def f(v):
+        v_exp = np.exp(v - v.max())
+        ret_val = v_exp / v_exp.sum()
+        assert np.isclose(ret_val.sum(), 1)
+        return ret_val
+
+    def deriv(v):
+        return softmax.f(v) * (1 - softmax.f(v))
+
+
 class sigmoid:
     def f(v):
         return 1 / (1 + np.exp(-1 * v))
