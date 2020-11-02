@@ -91,8 +91,8 @@ class FFNN:
 
         # sum along batch
         # can throw assert that shapes match self.bias_grads & self.weight_grads
-        bias_grads[-1] = np.sum(delta, axis=-1).reshape(-1, 1)
-        weight_grads[-1] = np.sum(batch_weights, axis=-1)
+        bias_grads[-1][:,:] = np.sum(delta, axis=-1).reshape(-1, 1)
+        weight_grads[-1][:,:] = np.sum(batch_weights, axis=-1)
 
         # back propogate through layers
         for l in range(2, len(self.layers)):
@@ -100,8 +100,8 @@ class FFNN:
             delta = np.dot(self.weights[-l + 1].T, delta) * nonlinear_deriv
             batch_weights = np.einsum("ib, jb -> ijb", delta, activations[-l - 1])
 
-            bias_grads[-l] = np.sum(delta, axis=-1).reshape(-1, 1)
-            weight_grads[-l] = np.sum(batch_weights, axis=-1)
+            bias_grads[-l][:,:] = np.sum(delta, axis=-1).reshape(-1, 1)
+            weight_grads[-l][:,:] = np.sum(batch_weights, axis=-1)
 
         for new_b, new_g, self_b, self_g in zip(bias_grads, weight_grads, self.biases, self.weights):
             assert new_b.shape == self_b.shape
@@ -121,12 +121,13 @@ class FFNN:
         """
         losses = []
         accuracies = []
+        # get random indicies from batch
         random_indicies = np.random.choice(xs.shape[1], size=batch_size)
         for epoch in range(epochs):
             self.mini_batch(xs[:, random_indicies], ys[:, random_indicies], lr)
 
-            ys_out_test = self.feed_forward(xs[:, random_indicies], training=False)
             ts = ys[:, random_indicies]
+            ys_out_test = self.feed_forward(xs[:, random_indicies], training=False)
 
             loss = self.cost_fcn.f(ts, ys_out_test)
             train_loss = np.mean(loss)
@@ -146,6 +147,8 @@ class FFNN:
         weight_grads, bias_grads = self.back_prop(batch_xs, batch_ys)
 
         self.weights = [
-            w - (lr / batch_xs.shape[-1]) * weight_grad for w, weight_grad in zip(self.weights, weight_grads)
+            w - (lr / batch_xs.shape[1]) * weight_grad for w, weight_grad in zip(self.weights, weight_grads)
         ]
-        self.biases = [b - (lr / batch_xs.shape[-1]) * bias_grad for b, bias_grad in zip(self.biases, bias_grads)]
+        self.biases = [
+            b - (lr / batch_xs.shape[1]) * bias_grad for b, bias_grad in zip(self.biases, bias_grads)
+        ]
