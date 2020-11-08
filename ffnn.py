@@ -117,7 +117,11 @@ class FFNN:
         e.g. with MNIST, each image is 28*28=784 features, so xs is (784, 60000)
         since there are 10 classes in mnist, y should be (10, 60000)
         """
-        batch_avg = 0
+        N = 1000
+        epoch = 0
+        batch_acc_avg = 0
+        batch_loss_avg = 0
+        samples_before_epoch = 0
         losses = []
         accuracies = []
         for batch in range(batchs):
@@ -125,19 +129,29 @@ class FFNN:
             random_indicies = np.random.choice(xs.shape[1], size=batch_size)
             self.mini_batch(xs[:, random_indicies], ys[:, random_indicies], lr)
 
+            # get labels and predicted outputs
             ts = ys[:, random_indicies]
             ys_out_test = self.feed_forward(xs[:, random_indicies])
 
-            loss = self.cost_fcn.f(ts, ys_out_test)
-            train_loss = np.mean(loss)
-            batch_avg += train_loss
+            batch_loss = self.cost_fcn.f(ts, ys_out_test).mean()
+            batch_accuracy = (np.argmax(ts, axis=0) == np.argmax(ys_out_test, axis=0)).mean()
 
-            losses.append(train_loss)
-            accuracies.append(np.sum(np.argmax(ts, axis=0) == np.argmax(ys_out_test, axis=0)) / ts.shape[-1])
+            batch_loss_avg += batch_loss
+            batch_acc_avg += batch_accuracy
 
-            if batch % 50 == 0:
-                print(f"batch {batch} \t train loss {(batch_avg/50):.8f}")
-                batch_avg = 0
+            losses.append(batch_loss)
+            accuracies.append(batch_accuracy)
+
+            samples_before_epoch += batch_size
+
+            if samples_before_epoch > xs.shape[1]:
+                samples_before_epoch = 0
+                epoch += 1
+
+            if batch % N == 0:
+                print(f"epoch {epoch} batch {batch}: \t train loss {batch_loss_avg / N :.6f} \t batch accuracy {batch_acc_avg / N :.6f}")
+                batch_loss_avg = 0
+                batch_acc_avg = 0
 
         return losses, accuracies
 
