@@ -11,7 +11,7 @@ import numpy as np
 
 
 np.set_printoptions(suppress=True)
-np.random.seed(0)
+np.random.seed(1337)
 
 
 class FFNN:
@@ -73,7 +73,7 @@ class FFNN:
 
         return (activation, activations, zs) if training else activation
 
-    def back_prop(self, xs, ts, batch=False):
+    def back_prop(self, xs, ts):
         """
         xs,ts are lists of vectors (ts are targets for training i.e. true output given input x)
         """
@@ -107,9 +107,9 @@ class FFNN:
 
         return weight_grads, bias_grads
 
-    def learn(self, xs, ys, epochs, batch_size, lr):
+    def learn(self, xs, ys, batchs, batch_size, lr):
         """
-        xs/ys is the input/output data, epochs is
+        xs/ys is the input/output data, batchs is
         the number of batches to train, batch size is the number of input/outputs to
         use in each batch, and lr is learning rate.
 
@@ -117,11 +117,12 @@ class FFNN:
         e.g. with MNIST, each image is 28*28=784 features, so xs is (784, 60000)
         since there are 10 classes in mnist, y should be (10, 60000)
         """
+        batch_avg = 0
         losses = []
         accuracies = []
-        # get random indicies from batch
-        random_indicies = np.random.choice(xs.shape[1], size=batch_size)
-        for epoch in range(epochs):
+        for batch in range(batchs):
+            # get random indicies from batch
+            random_indicies = np.random.choice(xs.shape[1], size=batch_size)
             self.mini_batch(xs[:, random_indicies], ys[:, random_indicies], lr)
 
             ts = ys[:, random_indicies]
@@ -129,12 +130,14 @@ class FFNN:
 
             loss = self.cost_fcn.f(ts, ys_out_test)
             train_loss = np.mean(loss)
+            batch_avg += train_loss
 
             losses.append(train_loss)
             accuracies.append(np.sum(np.argmax(ts, axis=0) == np.argmax(ys_out_test, axis=0)) / ts.shape[-1])
 
-            if epoch % 50 == 0:
-                print(f"epoch {epoch} \t train loss {train_loss:.8f}")
+            if batch % 50 == 0:
+                print(f"batch {batch} \t train loss {(batch_avg/50):.8f}")
+                batch_avg = 0
 
         return losses, accuracies
 
@@ -147,4 +150,6 @@ class FFNN:
         self.weights = [
             w - lr * weight_grad for w, weight_grad in zip(self.weights, weight_grads)
         ]
-        self.biases = [b - lr * bias_grad for b, bias_grad in zip(self.biases, bias_grads)]
+        self.biases = [
+            b - lr * bias_grad for b, bias_grad in zip(self.biases, bias_grads)
+        ]

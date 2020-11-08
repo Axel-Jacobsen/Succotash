@@ -9,7 +9,7 @@ from loss_fcns import squared_loss, cross_entropy_loss
 from activations import eLU, ReLU, leaky_ReLU, sigmoid, linear, tanh, softmax
 
 
-def fake_data():
+def greater_than_9():
     def _get_one_hot(targets, num_classes):
         """
         targets (num_samples,)
@@ -57,13 +57,13 @@ def mnist():
 
 
 if __name__ == "__main__":
-    X_train, Y_train, X_test, Y_test = fake_data()
+    X_train, Y_train, X_test, Y_test = greater_than_9()
     print("data loaded")
 
-    # net = ffnn.FFNN([784, 512, 128, 10], [tanh, tanh, softmax], cross_entropy_loss)
-    net = ffnn.FFNN([2, 8, 4, 2], [tanh, tanh, softmax], cross_entropy_loss)
+    mnist_widths = [784, 128, 10]
+    net = ffnn.FFNN([2,2,2], [ReLU, softmax], cross_entropy_loss)
 
-    losses, accuracies = net.learn(X_train, Y_train, 50000, 2*64, 0.001)
+    losses, accuracies = net.learn(X_train, Y_train, 100000, 128, 1)
 
     np.save("weights.npy", np.asarray(net.weights, dtype=object))
     np.save("biases.npy", np.asarray(net.biases, dtype=object))

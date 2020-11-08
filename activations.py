@@ -3,8 +3,8 @@ import numpy as np
 
 class softmax:
     def f(v):
-        v_exp = np.exp(v - v.max())
-        ret_val = v_exp / v_exp.sum()
+        v_exp = np.exp(v - v.max(axis=0))
+        ret_val = v_exp / v_exp.sum(axis=0)
         return ret_val
 
     def deriv(v):
