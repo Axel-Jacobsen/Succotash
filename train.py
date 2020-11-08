@@ -63,10 +63,16 @@ if __name__ == "__main__":
     mnist_widths = [784, 128, 10]
     net = ffnn.FFNN([2,2,2], [ReLU, softmax], cross_entropy_loss)
 
-    losses, accuracies = net.learn(X_train, Y_train, 100000, 128, 1)
+    try:
+        losses, accuracies = net.learn(X_train, Y_train, 100000, 128, 1)
+        plt.plot(range(len(losses)), losses)
+        plt.plot(range(len(accuracies)), accuracies)
+        plt.show()
+    except KeyboardInterrupt:
+        pass
 
-    np.save("weights.npy", np.asarray(net.weights, dtype=object))
-    np.save("biases.npy", np.asarray(net.biases, dtype=object))
+    np.save("weights.npy", np.asarray(net.weights), allow_pickle=True)
+    np.save("biases.npy", np.asarray(net.biases), allow_pickle=True)
 
     test_out = net.feed_forward(X_test)
     test_argmax = np.argmax(test_out, axis=0)
@@ -78,6 +84,3 @@ if __name__ == "__main__":
 
     samp_loss = sorted(zip(X_test.T, test_losses), key=lambda v: v[1])
 
-    plt.plot(range(len(losses)), losses)
-    plt.plot(range(len(accuracies)), accuracies)
-    plt.show()
