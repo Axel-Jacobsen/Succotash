@@ -5,7 +5,6 @@ class softmax:
     def f(v):
         v_exp = np.exp(v - v.max())
         ret_val = v_exp / v_exp.sum()
-        assert np.isclose(ret_val.sum(), 1)
         return ret_val
 
     def deriv(v):

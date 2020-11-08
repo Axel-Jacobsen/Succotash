@@ -22,6 +22,9 @@ class FFNN:
         self.cost_fcn = cost_fcn
         self.weights, self.biases = self.make_network()
 
+    def __repr__(self):
+        return f"<FFNN {self.layers} {self.cost_fcn}>"
+
     def make_network(self, random=True):
         """
         random == False for generating empty weight/bias matricies
@@ -36,9 +39,9 @@ class FFNN:
 
         for i, dim in enumerate(layer_iter):
             if random:
-                bound = 4 * np.sqrt(6) / np.sqrt(layer_arr[i] + layer_arr[i + 1])
-                weight_matrix = np.random.uniform(low=-bound, high=bound, size=(dim, prev_dim)).astype(np.float32)
-                biases_matrix = np.random.uniform(low=-bound, high=bound, size=(dim, 1)).astype(np.float32)
+                bound = np.sqrt(2 / layer_arr[i])
+                weight_matrix = bound * np.random.normal(size=(dim,prev_dim))#np.random.uniform(low=-bound, high=bound, size=(dim, prev_dim)).astype(np.float32)
+                biases_matrix = bound * np.random.normal(size=(dim,1))#np.random.uniform(low=-bound, high=bound, size=(dim, 1)).astype(np.float32)
             else:
                 weight_matrix = np.zeros((dim, prev_dim), dtype=np.float32)
                 biases_matrix = np.zeros((dim, 1), dtype=np.float32)
@@ -54,7 +57,7 @@ class FFNN:
         Feed-forward through the network, saving the activations and non-linearities
         after each layer for backprop.
 
-        xs has to be of shape (batch_size, num features)
+        xs has to be of shape (num features, batch_size)
         - x, z, a are all vectors of inputs, outputs, and linear outputs at layers
         """
         zs = []
@@ -67,7 +70,6 @@ class FFNN:
             zs.append(z)
             activation = self.hs[i].f(z)
             activations.append(activation)
-            assert z.shape == activation.shape
 
         return (activation, activations, zs) if training else activation
 
@@ -75,9 +77,7 @@ class FFNN:
         """
         xs,ts are lists of vectors (ts are targets for training i.e. true output given input x)
         """
-        weight_grads, bias_grads = self.make_network(
-            random=False
-        )  # todo: can remove this as we aren't copying in stuff
+        weight_grads, bias_grads = self.make_network(random=False)
         ys, activations, zs = self.feed_forward(xs, training=True)
 
         # delta_L = grad cost_fcn(outputs) * activation_fcn.deriv(weighted_output_last_layer)
@@ -87,12 +87,10 @@ class FFNN:
         delta = self.cost_fcn.deriv(ts, ys) * self.hs[-1].deriv(zs[-1])
 
         batch_weights = np.einsum("ib, jb -> ijb", delta, activations[-2])
-        # batch_weights = np.dot(delta, activations[-2].T)
 
         # sum along batch
-        # can throw assert that shapes match self.bias_grads & self.weight_grads
-        bias_grads[-1][:,:] = np.sum(delta, axis=-1).reshape(-1, 1)
-        weight_grads[-1][:,:] = np.sum(batch_weights, axis=-1)
+        bias_grads[-1][:, :] = np.mean(delta, axis=-1).reshape(-1, 1)
+        weight_grads[-1][:, :] = np.mean(batch_weights, axis=-1)
 
         # back propogate through layers
         for l in range(2, len(self.layers)):
@@ -100,8 +98,8 @@ class FFNN:
             delta = np.dot(self.weights[-l + 1].T, delta) * nonlinear_deriv
             batch_weights = np.einsum("ib, jb -> ijb", delta, activations[-l - 1])
 
-            bias_grads[-l][:,:] = np.sum(delta, axis=-1).reshape(-1, 1)
-            weight_grads[-l][:,:] = np.sum(batch_weights, axis=-1)
+            bias_grads[-l][:, :] = np.mean(delta, axis=-1).reshape(-1, 1)
+            weight_grads[-l][:, :] = np.mean(batch_weights, axis=-1)
 
         for new_b, new_g, self_b, self_g in zip(bias_grads, weight_grads, self.biases, self.weights):
             assert new_b.shape == self_b.shape
@@ -127,7 +125,7 @@ class FFNN:
             self.mini_batch(xs[:, random_indicies], ys[:, random_indicies], lr)
 
             ts = ys[:, random_indicies]
-            ys_out_test = self.feed_forward(xs[:, random_indicies], training=False)
+            ys_out_test = self.feed_forward(xs[:, random_indicies])
 
             loss = self.cost_fcn.f(ts, ys_out_test)
             train_loss = np.mean(loss)
@@ -147,8 +145,6 @@ class FFNN:
         weight_grads, bias_grads = self.back_prop(batch_xs, batch_ys)
 
         self.weights = [
-            w - (lr / batch_xs.shape[1]) * weight_grad for w, weight_grad in zip(self.weights, weight_grads)
+            w - lr * weight_grad for w, weight_grad in zip(self.weights, weight_grads)
         ]
-        self.biases = [
-            b - (lr / batch_xs.shape[1]) * bias_grad for b, bias_grad in zip(self.biases, bias_grads)
-        ]
+        self.biases = [b - lr * bias_grad for b, bias_grad in zip(self.biases, bias_grads)]
