@@ -40,8 +40,8 @@ class FFNN:
         for i, dim in enumerate(layer_iter):
             if random:
                 bound = np.sqrt(2 / layer_arr[i])
-                weight_matrix = bound * np.random.normal(size=(dim,prev_dim))#np.random.uniform(low=-bound, high=bound, size=(dim, prev_dim)).astype(np.float32)
-                biases_matrix = bound * np.random.normal(size=(dim,1))#np.random.uniform(low=-bound, high=bound, size=(dim, 1)).astype(np.float32)
+                weight_matrix = np.random.normal(scale=bound, size=(dim, prev_dim)).astype(np.float32)
+                biases_matrix = np.random.normal(scale=bound, size=(dim, 1)).astype(np.float32)
             else:
                 weight_matrix = np.zeros((dim, prev_dim), dtype=np.float32)
                 biases_matrix = np.zeros((dim, 1), dtype=np.float32)
@@ -117,13 +117,14 @@ class FFNN:
         e.g. with MNIST, each image is 28*28=784 features, so xs is (784, 60000)
         since there are 10 classes in mnist, y should be (10, 60000)
         """
-        N = 1000
+        N = 50
         epoch = 0
         batch_acc_avg = 0
         batch_loss_avg = 0
         samples_before_epoch = 0
-        losses = []
-        accuracies = []
+        self.losses = []
+        self.accuracies = []
+
         for batch in range(batchs):
             # get random indicies from batch
             random_indicies = np.random.choice(xs.shape[1], size=batch_size)
@@ -139,8 +140,8 @@ class FFNN:
             batch_loss_avg += batch_loss
             batch_acc_avg += batch_accuracy
 
-            losses.append(batch_loss)
-            accuracies.append(batch_accuracy)
+            self.losses.append(batch_loss)
+            self.accuracies.append(batch_accuracy)
 
             samples_before_epoch += batch_size
 
@@ -148,12 +149,16 @@ class FFNN:
                 samples_before_epoch = 0
                 epoch += 1
 
-            if batch % N == 0:
-                print(f"epoch {epoch} batch {batch}: \t train loss {batch_loss_avg / N :.6f} \t batch accuracy {batch_acc_avg / N :.6f}")
+            if batch % N == 0 and batch > 0:
+                print(
+                    f"epoch {epoch} batch {batch}: \t train loss {batch_loss_avg / N :.6f} \t batch accuracy {batch_acc_avg / N :.6f}"
+                )
+                if batch_loss_avg / N > 5:
+                    break
                 batch_loss_avg = 0
                 batch_acc_avg = 0
 
-        return losses, accuracies
+        return self.losses, self.accuracies
 
     def mini_batch(self, batch_xs, batch_ys, lr):
         """
@@ -161,9 +166,5 @@ class FFNN:
         """
         weight_grads, bias_grads = self.back_prop(batch_xs, batch_ys)
 
-        self.weights = [
-            w - lr * weight_grad for w, weight_grad in zip(self.weights, weight_grads)
-        ]
-        self.biases = [
-            b - lr * bias_grad for b, bias_grad in zip(self.biases, bias_grads)
-        ]
+        self.weights = [w - (lr / 1) * weight_grad for w, weight_grad in zip(self.weights, weight_grads)]
+        self.biases = [b - (lr / 1) * bias_grad for b, bias_grad in zip(self.biases, bias_grads)]

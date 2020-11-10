@@ -20,10 +20,10 @@ def greater_than_9():
         return ret
 
     return (
-        np.load("fake_data/X_train.npy"),
-        _get_one_hot(np.load("fake_data/Y_train.npy"), 2),
-        np.load("fake_data/X_test.npy"),
-        _get_one_hot(np.load("fake_data/Y_test.npy"), 2),
+        np.load("gt9_data/X_train.npy"),
+        _get_one_hot(np.load("gt9_data/Y_train.npy"), 2),
+        np.load("gt9_data/X_test.npy"),
+        _get_one_hot(np.load("gt9_data/Y_test.npy"), 2),
     )
 
 
@@ -57,22 +57,24 @@ def mnist():
 
 
 if __name__ == "__main__":
-    X_train, Y_train, X_test, Y_test = greater_than_9()
+    X_train, Y_train, X_test, Y_test = mnist()
     print("data loaded")
 
-    mnist_widths = [784, 128, 10]
-    net = ffnn.FFNN([2,2,2], [ReLU, softmax], cross_entropy_loss)
+    mnist_widths = [784, 512, 10]
+    gt9_widths = [2, 4, 4, 2]
+    net = ffnn.FFNN(mnist_widths, [leaky_ReLU, softmax], cross_entropy_loss)
 
     try:
-        losses, accuracies = net.learn(X_train, Y_train, 100000, 128, 1)
-        plt.plot(range(len(losses)), losses)
-        plt.plot(range(len(accuracies)), accuracies)
-        plt.show()
+        losses, accuracies = net.learn(X_train, Y_train, 50000, 256, .01)
     except KeyboardInterrupt:
         pass
+    finally:
+        plt.plot(range(len(net.losses)), net.losses)
+        plt.plot(range(len(net.accuracies)), net.accuracies)
+        plt.show()
 
-    np.save("weights.npy", np.asarray(net.weights), allow_pickle=True)
-    np.save("biases.npy", np.asarray(net.biases), allow_pickle=True)
+    np.save("weights.npy", np.asarray(net.weights, dtype=object), allow_pickle=True)
+    np.save("biases.npy", np.asarray(net.biases, dtype=object), allow_pickle=True)
 
     test_out = net.feed_forward(X_test)
     test_argmax = np.argmax(test_out, axis=0)
@@ -81,6 +83,3 @@ if __name__ == "__main__":
     test_losses = cross_entropy_loss.f(Y_test, test_out)
     print("Test loss: {:.3f}".format(np.mean(test_losses)))
     print("Test accuracy: {:.3f}".format((Y_test_argmax == test_argmax).sum() / Y_test.shape[1]))
-
-    samp_loss = sorted(zip(X_test.T, test_losses), key=lambda v: v[1])
-
