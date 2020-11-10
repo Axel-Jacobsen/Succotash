@@ -3,19 +3,30 @@
 import ffnn
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.pyplot import imshow
 
+from train import mnist
 from loss_fcns import squared_loss, cross_entropy_loss
-from activations import eLU, ReLU, leaky_ReLU, sigmoid, linear, tanh, softmax
+import ffnn
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.pyplot import imshow
+
+from train import mnist
+from loss_fcns import squared_loss, cross_entropy_loss
+from activations import leaky_ReLU, softmax
 
 
-net = ffnn.FFNN([2, 2, 2], [ReLU, softmax], cross_entropy_loss)
-net.weights = np.load("weights.npy")
-net.biases = np.load("biases.npy")
+net = ffnn.FFNN([784, 256, 10], [leaky_ReLU, softmax], cross_entropy_loss)
+net.weights = np.load("good_models/0/weights.npy", allow_pickle=True)
+net.biases = np.load("good_models/0/biases.npy", allow_pickle=True)
 
-p1 = np.asarray([[1], [1]])
-p2 = np.asarray([[5], [5]])
-p3 = np.asarray([[9], [9]])
 
-print(p1, net.feed_forward(p1), end="\n\n")
-print(p2, net.feed_forward(p2), end="\n\n")
-print(p3, net.feed_forward(p3), end="\n\n")
+X_train, Y_train, X_test, Y_test = mnist()
+X_test.shape
+loss_samp = list(sorted(zip(X_test.T, cross_entropy_loss.f(Y_test, net.feed_forward(X_test))), key=lambda v: v[1]))
+
+n = 45
+print(loss_samp[n][1])
+imshow(loss_samp[n][0].reshape(28, 28))
+plt.show()

@@ -49,9 +49,9 @@ def mnist():
     y_test = load_data("t10k-labels-idx1-ubyte")
 
     return (
-        x_train[16:].reshape((28 * 28, -1), order="C"),
+        x_train[16:].reshape((28 * 28, -1), order="F"),
         _get_one_hot(y_train[8:], 10).reshape((10, -1)),
-        x_test[16:].reshape((28 * 28, -1), order="C"),
+        x_test[16:].reshape((28 * 28, -1), order="F"),
         _get_one_hot(y_test[8:], 10).reshape((10, -1)),
     )
 
@@ -60,12 +60,12 @@ if __name__ == "__main__":
     X_train, Y_train, X_test, Y_test = mnist()
     print("data loaded")
 
-    mnist_widths = [784, 512, 10]
-    gt9_widths = [2, 4, 4, 2]
+    gt9_widths = [2, 4, 2]
+    mnist_widths = [784, 256, 10]
     net = ffnn.FFNN(mnist_widths, [leaky_ReLU, softmax], cross_entropy_loss)
 
     try:
-        losses, accuracies = net.learn(X_train, Y_train, 50000, 256, .01)
+        losses, accuracies = net.learn(X_train, Y_train, 10000, 128, .01)
     except KeyboardInterrupt:
         pass
     finally:

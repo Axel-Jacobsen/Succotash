@@ -13,6 +13,7 @@ activations.py -> nonlinear activation functions
 loss_fcns.py   -> Loss/Error/Cost functions
 ```
 
+![mnist training](mnist_training.png)
 
 shape of input = (batch size, l1)
 shape of l1    = (l1, l2)

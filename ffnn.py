@@ -21,6 +21,7 @@ class FFNN:
         self.hs = hs
         self.cost_fcn = cost_fcn
         self.weights, self.biases = self.make_network()
+        self._prev_dW, self._prev_db = self.make_network(random=False)
 
     def __repr__(self):
         return f"<FFNN {self.layers} {self.cost_fcn}>"
@@ -160,11 +161,12 @@ class FFNN:
 
         return self.losses, self.accuracies
 
-    def mini_batch(self, batch_xs, batch_ys, lr):
+    def mini_batch(self, batch_xs, batch_ys, lr, alpha=0.05):
         """
         batch_xs is the batch of inputs, batch_ys is batch of outputs, lr is learning rate
         """
         weight_grads, bias_grads = self.back_prop(batch_xs, batch_ys)
-
-        self.weights = [w - (lr / 1) * weight_grad for w, weight_grad in zip(self.weights, weight_grads)]
-        self.biases = [b - (lr / 1) * bias_grad for b, bias_grad in zip(self.biases, bias_grads)]
+        self._prev_dW = [lr * weight_grad - alpha * prev_dW for weight_grad, prev_dW in zip(weight_grads, self._prev_dW)]
+        self._prev_db = [lr * bias_grad - alpha * prev_db for bias_grad, prev_db in zip(bias_grads, self._prev_db)]
+        self.weights = [w - dw for w, dw in zip(self.weights, self._prev_dW)]
+        self.biases  = [b - db for b, db in zip(self.biases, self._prev_db)]
