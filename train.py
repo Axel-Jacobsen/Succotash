@@ -45,7 +45,7 @@ if __name__ == "__main__":
     net = ffnn.FFNN([784, 256, 10], [leaky_ReLU, softmax], cross_entropy_loss)
 
     try:
-        losses, accuracies = net.learn(X_train, Y_train, 10000, 128, 1)
+        losses, accuracies = net.learn(X_train, Y_train, 5000, 128, 1)
     except KeyboardInterrupt:
         pass
     finally:

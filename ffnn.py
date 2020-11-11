@@ -10,10 +10,6 @@ Philosophy of this network:
 import numpy as np
 
 
-np.set_printoptions(suppress=True)
-np.random.seed(1337)
-
-
 class FFNN:
     def __init__(self, layers, hs, cost_fcn):
         assert len(hs) == len(layers) - 1
