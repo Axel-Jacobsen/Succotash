@@ -9,24 +9,6 @@ from loss_fcns import squared_loss, cross_entropy_loss
 from activations import eLU, ReLU, leaky_ReLU, sigmoid, linear, tanh, softmax
 
 
-def greater_than_9():
-    def _get_one_hot(targets, num_classes):
-        """
-        targets (num_samples,)
-        output  (num_classes, num_samples)
-        """
-        ret = np.zeros((num_classes, targets.shape[0]))
-        ret[targets, np.arange(targets.size)] = 1
-        return ret
-
-    return (
-        np.load("gt9_data/X_train.npy"),
-        _get_one_hot(np.load("gt9_data/Y_train.npy"), 2),
-        np.load("gt9_data/X_test.npy"),
-        _get_one_hot(np.load("gt9_data/Y_test.npy"), 2),
-    )
-
-
 def mnist():
     def _get_one_hot(targets, num_classes):
         """
@@ -60,9 +42,7 @@ if __name__ == "__main__":
     X_train, Y_train, X_test, Y_test = mnist()
     print("data loaded")
 
-    gt9_widths = [2, 4, 2]
-    mnist_widths = [784, 256, 10]
-    net = ffnn.FFNN(mnist_widths, [leaky_ReLU, softmax], cross_entropy_loss)
+    net = ffnn.FFNN([784, 256, 10], [leaky_ReLU, softmax], cross_entropy_loss)
 
     try:
         losses, accuracies = net.learn(X_train, Y_train, 10000, 128, 1)
