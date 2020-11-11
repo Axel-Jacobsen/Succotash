@@ -1,8 +1,8 @@
 # SUCCOTASH
 
-The goal of this is to implement basic neural network architectures with a focus on...
-  1. the math behind machine learning
-  2. fast training on a CPU
+Play neural network, simple and easy enough to write - lots of room for improvement and generalization!
+
+97.2% accuracy on MNIST Test set
 
 #### File Structure
 ```
@@ -13,6 +13,3 @@ activations.py -> nonlinear activation functions
 loss_fcns.py   -> Loss/Error/Cost functions
 ```
 
-![mnist training](mnist_training.png)
-
-`orange` is accuracy, `blue` is loss
