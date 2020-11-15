@@ -2,7 +2,8 @@
 
 Play neural network, simple and easy enough to write - lots of room for improvement and generalization!
 
-97.2% accuracy on MNIST Test set
+97.2% accuracy on MNIST Test set (with the weights and biases in `good_models`).
+Try `./test.py` to see examples of the network's predictions
 
 #### File Structure
 ```
