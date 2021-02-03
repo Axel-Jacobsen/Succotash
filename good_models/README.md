@@ -11,7 +11,6 @@ And here are the parameters from the training session
 test accuracy 0.972
 test loss 0.094
 [784, 256, 10] [leaky_ReLU, softmax] cross_entropy_loss
-epochs 10000
 batch size 128
 learning rate 1
 alpha 0.05
