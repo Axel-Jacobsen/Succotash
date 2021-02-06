@@ -40,7 +40,9 @@ class eLU:
         return np.greater(v, 0) * v + (1 - np.greater(v, 0)) * (np.exp(v) - 1)
 
     def deriv(v):
-        return np.greater(v, 0) + np.maximum(v, 0) * v + (1 - np.greater(v, 0)) * np.exp(v)
+        return (
+            np.greater(v, 0) + np.maximum(v, 0) * v + (1 - np.greater(v, 0)) * np.exp(v)
+        )
 
 
 class ReLU:

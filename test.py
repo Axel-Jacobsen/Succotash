@@ -6,6 +6,7 @@ from typing import Tuple
 from matplotlib.pyplot import imshow
 
 import ffnn
+
 from train import mnist
 from loss_fcns import squared_loss, cross_entropy_loss
 from activations import leaky_ReLU, softmax

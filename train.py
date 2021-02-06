@@ -62,4 +62,8 @@ if __name__ == "__main__":
 
     test_losses = cross_entropy_loss.f(Y_test, test_out)
     print("Test loss: {:.3f}".format(np.mean(test_losses)))
-    print("Test accuracy: {:.3f}".format((Y_test_argmax == test_argmax).sum() / Y_test.shape[1]))
+    print(
+        "Test accuracy: {:.3f}".format(
+            (Y_test_argmax == test_argmax).sum() / Y_test.shape[1]
+        )
+    )

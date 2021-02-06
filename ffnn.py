@@ -37,8 +37,12 @@ class FFNN:
         for i, dim in enumerate(layer_iter):
             if random:
                 bound = np.sqrt(2 / layer_arr[i])
-                weight_matrix = np.random.normal(scale=bound, size=(dim, prev_dim)).astype(np.float32)
-                biases_matrix = np.random.normal(scale=bound, size=(dim, 1)).astype(np.float32)
+                weight_matrix = np.random.normal(
+                    scale=bound, size=(dim, prev_dim)
+                ).astype(np.float32)
+                biases_matrix = np.random.normal(scale=bound, size=(dim, 1)).astype(
+                    np.float32
+                )
             else:
                 weight_matrix = np.zeros((dim, prev_dim), dtype=np.float32)
                 biases_matrix = np.zeros((dim, 1), dtype=np.float32)
@@ -98,7 +102,9 @@ class FFNN:
             bias_grads[-l][:, :] = np.mean(delta, axis=-1).reshape(-1, 1)
             weight_grads[-l][:, :] = np.mean(batch_weights, axis=-1)
 
-        for new_b, new_g, self_b, self_g in zip(bias_grads, weight_grads, self.biases, self.weights):
+        for new_b, new_g, self_b, self_g in zip(
+            bias_grads, weight_grads, self.biases, self.weights
+        ):
             assert new_b.shape == self_b.shape
             assert new_g.shape == self_g.shape
 
@@ -132,7 +138,9 @@ class FFNN:
             ys_out_test = self.feed_forward(xs[:, random_indicies])
 
             batch_loss = self.cost_fcn.f(ts, ys_out_test).mean()
-            batch_accuracy = (np.argmax(ts, axis=0) == np.argmax(ys_out_test, axis=0)).mean()
+            batch_accuracy = (
+                np.argmax(ts, axis=0) == np.argmax(ys_out_test, axis=0)
+            ).mean()
 
             batch_loss_avg += batch_loss
             batch_acc_avg += batch_accuracy
@@ -162,7 +170,13 @@ class FFNN:
         batch_xs is the batch of inputs, batch_ys is batch of outputs, lr is learning rate
         """
         weight_grads, bias_grads = self.back_prop(batch_xs, batch_ys)
-        self._prev_dW = [lr * weight_grad - alpha * prev_dW for weight_grad, prev_dW in zip(weight_grads, self._prev_dW)]
-        self._prev_db = [lr * bias_grad - alpha * prev_db for bias_grad, prev_db in zip(bias_grads, self._prev_db)]
+        self._prev_dW = [
+            lr * weight_grad - alpha * prev_dW
+            for weight_grad, prev_dW in zip(weight_grads, self._prev_dW)
+        ]
+        self._prev_db = [
+            lr * bias_grad - alpha * prev_db
+            for bias_grad, prev_db in zip(bias_grads, self._prev_db)
+        ]
         self.weights = [w - dw for w, dw in zip(self.weights, self._prev_dW)]
-        self.biases  = [b - db for b, db in zip(self.biases, self._prev_db)]
+        self.biases = [b - db for b, db in zip(self.biases, self._prev_db)]

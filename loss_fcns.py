@@ -5,7 +5,9 @@ class cross_entropy_loss:
     EPS = 1e-9
 
     def f(t, y):
-        ret = -t * np.log(np.clip(y, cross_entropy_loss.EPS, 1 - cross_entropy_loss.EPS))
+        ret = -t * np.log(
+            np.clip(y, cross_entropy_loss.EPS, 1 - cross_entropy_loss.EPS)
+        )
         return ret.sum(axis=0)
 
     def deriv(t, y):
