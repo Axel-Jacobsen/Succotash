@@ -17,7 +17,7 @@ Here the the best numbers from the test set (by lowest loss):
 
 And here are the worst numbers from the test set (by greatest loss):
 ![Worst of the worst](good_models/worst.png)
-The numbers above are malformed - a human would have trouble guessing some of them.
+A human would have trouble guessing some of the numbers above.
 
 And here are the parameters from the training session
 ```
