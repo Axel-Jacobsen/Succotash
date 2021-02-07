@@ -12,11 +12,12 @@ activations.py -> nonlinear activation functions
 loss_fcns.py   -> Loss/Error/Cost functions
 ```
 
-Here the the best numbers from the test set (by lowest lost)
+Here the the best numbers from the test set (by lowest loss):
 ![Best of the best](good_models/best.png)
 
-And here are the worst numbers from the test set (by greatest lost)
+And here are the worst numbers from the test set (by greatest loss):
 ![Worst of the worst](good_models/worst.png)
+The numbers above are malformed - a human would have trouble guessing some of them.
 
 And here are the parameters from the training session
 ```
