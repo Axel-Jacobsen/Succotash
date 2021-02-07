@@ -73,11 +73,11 @@ if __name__ == "__main__":
     best, worst = get_grid()
 
     plt.axis("off")
-
     plt.title("Best")
     imshow(best)
     plt.show()
 
+    plt.axis("off")
     plt.title("Worst")
     imshow(worst)
     plt.show()
