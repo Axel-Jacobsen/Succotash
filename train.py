@@ -39,7 +39,11 @@ def mnist():
 
 
 if __name__ == "__main__":
-    X_train, Y_train, X_test, Y_test = mnist()
+    X_train_p, Y_train, X_test_p, Y_test = mnist()
+
+    X_train = X_train_p - np.mean(X_train_p, axis=1)[:, np.newaxis]
+    X_test = X_test_p - np.mean(X_test_p, axis=1)[:, np.newaxis]
+
     print("data loaded")
 
     net = ffnn.FFNN([784, 256, 10], [leaky_ReLU, softmax], cross_entropy_loss)
