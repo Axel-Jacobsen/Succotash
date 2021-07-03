@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import ffnn
 
 from loss_fcns import squared_loss, cross_entropy_loss
-from activations import eLU, ReLU, leaky_ReLU, sigmoid, linear, tanh, softmax
+from activations import eLU, ReLU, leaky_ReLU, sigmoid, linear, tanh, softmax, MISH
 
 
 def mnist():
@@ -46,7 +46,7 @@ if __name__ == "__main__":
 
     print("data loaded")
 
-    net = ffnn.FFNN([784, 256, 10], [leaky_ReLU, softmax], cross_entropy_loss)
+    net = ffnn.FFNN([784, 256, 10], [MISH, MISH], cross_entropy_loss)
 
     try:
         losses, accuracies = net.learn(X_train, Y_train, 5000, 128, 1)

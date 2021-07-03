@@ -59,3 +59,14 @@ class leaky_ReLU:
 
     def deriv(v):
         return np.greater(v, 0).astype(float) + 0.1 * np.less(v, 0).astype(float)
+
+class MISH:
+    # Mish: A Self Regularized Non-Monotonic Activation Function
+    # https://arxiv.org/pdf/1908.08681.pdf
+    def f(v):
+        return v * tanh.f(np.log(1 + np.exp(v)))
+
+    def deriv(v):
+        w = 4 * (v + 1) + 4 * np.exp(2 * v) + np.exp(3 * v) + np.exp(v) * (4 * v + 6)
+        delta = 2 * np.exp(v) + np.exp(2*v) + 2
+        return np.exp(v) * w / np.square(delta)
