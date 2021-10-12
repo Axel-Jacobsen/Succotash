@@ -102,12 +102,6 @@ class FFNN:
             bias_grads[-l][:, :] = np.mean(delta, axis=-1).reshape(-1, 1)
             weight_grads[-l][:, :] = np.mean(batch_weights, axis=-1)
 
-        for new_b, new_g, self_b, self_g in zip(
-            bias_grads, weight_grads, self.biases, self.weights
-        ):
-            assert new_b.shape == self_b.shape
-            assert new_g.shape == self_g.shape
-
         return weight_grads, bias_grads
 
     def learn(self, xs, ys, batchs, batch_size, lr):
